@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Calendar{% endblock %}
+{% block page_title %}Calendar{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-xl-9">
+    <div class="card"><div class="card-body calendar-wrap">
+      <div id="calendar" data-feed="/api/calendar/events"></div>
+      <noscript>The calendar needs JavaScript. Upcoming deadlines are also listed on your dashboard.</noscript>
+    </div></div>
+    <div class="d-flex flex-wrap gap-3 small text-muted mt-2">
+      <span><span class="legend-swatch" style="background:#2a78d6"></span> Quiz due</span>
+      <span><span class="legend-swatch" style="background:#e34948"></span> Mock exam due</span>
+      <span><span class="legend-swatch" style="background:#1baf7a"></span> My event</span>
+      <span><span class="legend-swatch" style="background:#6250d6"></span> Class event</span>
+      {% if current_user.role == 'student' %}<span><span class="legend-swatch" style="background:#eda100"></span> Goal deadline</span>{% endif %}
+    </div>
+  </div>
+  <div class="col-xl-3">
+    <div class="card">
+      <div class="card-header fw-semibold"><i class="bi bi-calendar-plus"></i> Add event</div>
+      <div class="card-body">
+        <form method="post" action="/calendar/events">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <div class="mb-2"><label class="form-label small" for="ev-title">Title</label><input class="form-control" id="ev-title" name="title" maxlength="255" required></div>
+          <div class="mb-2"><label class="form-label small" for="ev-start">Start</label><input class="form-control" type="datetime-local" id="ev-start" name="start" required></div>
+          <div class="mb-2"><label class="form-label small" for="ev-end">End (optional)</label><input class="form-control" type="datetime-local" id="ev-end" name="end"></div>
+          <div class="form-check mb-2"><input class="form-check-input" type="checkbox" id="ev-allday" name="all_day" value="true"><label class="form-check-label small" for="ev-allday">All day</label></div>
+          {% if current_user.is_staff %}<div class="form-check mb-2"><input class="form-check-input" type="checkbox" id="ev-everyone" name="everyone" value="true"><label class="form-check-label small" for="ev-everyone">Show to everyone</label></div>{% endif %}
+          <div class="mb-3"><label class="form-label small" for="ev-desc">Notes</label><textarea class="form-control" id="ev-desc" name="description" rows="2"></textarea></div>
+          <button class="btn btn-primary btn-sm" type="submit">Add</button>
+        </form>
+      </div>
+    </div>
+    <div class="card mt-3 d-none" id="eventDetail">
+      <div class="card-body small">
+        <div class="fw-semibold" id="evTitle"></div>
+        <div class="text-muted" id="evWhen"></div>
+        <div class="mt-2" id="evDesc"></div>
+        <form method="post" id="evDelete" class="mt-2 d-none" data-confirm="Delete this event?">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn btn-sm btn-outline-danger">Delete event</button></form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+<script src="/static/js/calendar.js"></script>
+{% endblock %}

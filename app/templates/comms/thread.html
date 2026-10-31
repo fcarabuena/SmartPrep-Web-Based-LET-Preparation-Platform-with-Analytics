@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}{{ root.subject }}{% endblock %}
+{% block page_title %}Inbox{% endblock %}
+{% block content %}
+<div class="row justify-content-center"><div class="col-xl-8">
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <a href="/inbox" class="small"><i class="bi bi-arrow-left"></i> Back to inbox</a>
+    <form method="post" action="/inbox/{{ root.id }}/delete" data-confirm="Delete this conversation from your inbox?">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i> Delete</button></form>
+  </div>
+  <h1 class="h5 fw-bold mb-3">{{ root.subject }} {% if root.is_feedback %}<span class="badge text-bg-info">Feedback</span>{% endif %}</h1>
+  {% for m in msgs %}
+  <div class="card mb-3 {% if m.sender_id == current_user.id %}ms-lg-5 border-primary-subtle{% else %}me-lg-5{% endif %}">
+    <div class="card-body">
+      <div class="d-flex justify-content-between small mb-2">
+        <span class="fw-semibold"><span class="avatar avatar-sm me-1">{{ m.sender.initials }}</span>{{ 'You' if m.sender_id == current_user.id else m.sender.full_name }} <span class="text-muted fw-normal">· {{ m.sender.role }}</span></span>
+        <span class="text-muted">{{ m.created_at|dt }}</span>
+      </div>
+      <div>{{ m.body|nl2br }}</div>
+    </div>
+  </div>
+  {% endfor %}
+  {% if other %}
+  <form method="post" action="/inbox/{{ root.id }}/reply" class="card card-body" id="bottom">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <label class="form-label" for="body">Reply to {{ other.full_name }}</label>
+    <textarea class="form-control mb-2" id="body" name="body" rows="4" required></textarea>
+    <div><button class="btn btn-primary"><i class="bi bi-reply"></i> Send reply</button></div>
+  </form>
+  {% endif %}
+</div></div>
+{% endblock %}

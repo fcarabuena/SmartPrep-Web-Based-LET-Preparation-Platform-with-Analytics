@@ -1,4 +1,5 @@
 """Jinja2 setup, flash messages and the render() helper."""
+import time
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
@@ -132,6 +133,20 @@ def unread_count(request: Request, user) -> dict:
     return {"notifications": n or 0, "messages": m or 0}
 
 
+def _lazy_reminders(request: Request, user) -> None:
+    """Deadline reminders without cron: checked on page load at most every 10 minutes per session."""
+    last = request.session.get("due_chk", 0)
+    if time.time() - last < 600:
+        return
+    request.session["due_chk"] = time.time()
+    from app.services.notify import check_due_soon
+
+    try:
+        check_due_soon(request.state.db, user)
+    except Exception:  # never break a page for a reminder
+        request.state.db.rollback()
+
+
 def render(request: Request, name: str, ctx: dict | None = None, status_code: int = 200):
     ctx = dict(ctx or {})
     user = getattr(request.state, "user", None)
@@ -144,4 +159,5 @@ def render(request: Request, name: str, ctx: dict | None = None, status_code: in
         from app.services.content import nav_categories
 
         ctx.setdefault("nav_categories", nav_categories(request.state.db, user.major))
+        _lazy_reminders(request, user)
     return templates.TemplateResponse(request, name, ctx, status_code=status_code)

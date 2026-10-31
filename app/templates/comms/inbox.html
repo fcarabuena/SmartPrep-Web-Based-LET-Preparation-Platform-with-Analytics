@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import pager, empty with context %}
+{% block title %}Inbox{% endblock %}
+{% block page_title %}Inbox{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-3">
+    <a href="/inbox/compose" class="btn btn-primary w-100 mb-3"><i class="bi bi-pencil-square"></i> Compose</a>
+    <div class="list-group mb-3">
+      {% for key, label in boxes.items() %}
+      <a class="list-group-item list-group-item-action d-flex justify-content-between {% if box == key %}active{% endif %}" href="/inbox?box={{ key }}">
+        <span><i class="bi bi-{{ {'inbox': 'inbox', 'unread': 'envelope', 'sent': 'send', 'drafts': 'file-earmark'}[key] }} me-2"></i>{{ label }}</span>
+        {% if box_counts.get(key) %}<span class="badge rounded-pill text-bg-{{ 'light' if box == key else 'primary' }}">{{ box_counts[key] }}</span>{% endif %}
+      </a>{% endfor %}
+    </div>
+    <form method="get"><input type="hidden" name="box" value="{{ box }}"><input type="hidden" name="q" value="{{ q }}">
+      <label class="form-label small" for="course">Filter by course</label>
+      <select class="form-select form-select-sm" id="course" name="course" data-autosubmit-select>
+        <option value="0">All courses</option>{% for c in courses %}<option value="{{ c.id }}" {% if course == c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select>
+      <button class="btn btn-sm btn-outline-secondary mt-2">Apply</button>
+    </form>
+  </div>
+  <div class="col-lg-9">
+    <form class="mb-3" method="get" role="search"><input type="hidden" name="box" value="{{ box }}"><input type="hidden" name="course" value="{{ course }}">
+      <div class="input-group"><span class="input-group-text"><i class="bi bi-search"></i></span>
+        <label class="visually-hidden" for="q">Search messages</label><input class="form-control" id="q" name="q" value="{{ q }}" placeholder="Search subject, message or sender"><button class="btn btn-outline-primary">Search</button></div></form>
+    <div class="card"><div class="list-group list-group-flush">
+      {% for m in items %}
+      {% set unread_row = box in ('inbox', 'unread') and not m.read_at %}
+      <a class="list-group-item list-group-item-action py-3 {% if unread_row %}bg-primary-subtle{% endif %}" href="{{ '/inbox/compose?draft=%d'|format(m.id) if box == 'drafts' else '/inbox/%d'|format(m.thread_id or m.id) }}">
+        <div class="d-flex justify-content-between gap-2">
+          <span class="{% if unread_row %}fw-bold{% else %}fw-semibold{% endif %}">
+            {% if box in ('sent', 'drafts') %}To: {{ m.recipient.full_name if m.recipient else '(no recipient)' }}{% else %}{{ m.sender.full_name }}{% endif %}
+            {% if m.is_feedback %}<span class="badge text-bg-info ms-1">Feedback</span>{% endif %}
+            {% if m.course %}<span class="badge text-bg-light border ms-1">{{ m.course.name }}</span>{% endif %}
+          </span>
+          <span class="small text-muted text-nowrap">{{ m.created_at|ago }}</span>
+        </div>
+        <div class="small">{{ m.subject }}</div>
+        <div class="small text-muted text-truncate">{{ m.body|truncate(140) }}</div>
+      </a>
+      {% else %}{{ empty('No messages here.', 'envelope-open') }}{% endfor %}
+    </div></div>
+    {{ pager(page, pages, '/inbox?box=%s&course=%d&q=%s&'|format(box, course, q|urlencode)) }}
+  </div>
+</div>
+{% endblock %}

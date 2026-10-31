@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import empty, confirm_post with context %}
+{% block title %}Announcements{% endblock %}
+{% block page_title %}Announcements{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-xl-5">
+    <div class="card">
+      <div class="card-header fw-semibold"><i class="bi bi-megaphone"></i> New announcement</div>
+      <div class="card-body">
+        <form method="post" action="/announcements">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <div class="mb-3"><label class="form-label" for="title">Title</label><input class="form-control" id="title" name="title" maxlength="255" required></div>
+          <div class="mb-3"><label class="form-label" for="body">Message</label><textarea class="form-control" id="body" name="body" rows="5" required></textarea></div>
+          <fieldset class="mb-3"><legend class="form-label fs-6">Send to</legend>
+            {% for r in roles %}<div class="form-check form-check-inline"><input class="form-check-input" type="checkbox" name="roles" value="{{ r }}" id="role-{{ r }}"><label class="form-check-label" for="role-{{ r }}">All {{ r }}s</label></div>{% endfor %}
+            <div class="row g-2 mt-1">
+              <div class="col-12"><label class="form-label small" for="course_id">Students who can see course</label>
+                <select class="form-select" id="course_id" name="course_id"><option value="0">—</option>{% for c in courses %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}</select></div>
+              <div class="col-12"><label class="form-label small" for="user_ids">Specific students (Ctrl/⌘-click)</label>
+                <select class="form-select" id="user_ids" name="user_ids" multiple size="5">{% for s in students %}<option value="{{ s.id }}">{{ s.full_name }}</option>{% endfor %}</select></div>
+            </div>
+            <div class="form-text">Leave everything empty to notify everyone.</div>
+          </fieldset>
+          {% if settings.email_enabled %}<div class="form-check mb-3"><input class="form-check-input" type="checkbox" name="send_email" value="true" id="send_email"><label class="form-check-label" for="send_email">Also send by email (Brevo)</label></div>{% endif %}
+          <button class="btn btn-primary" type="submit"><i class="bi bi-send"></i> Publish</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-xl-7">
+    {% for a in items %}
+    <div class="card mb-3"><div class="card-body">
+      <div class="d-flex justify-content-between gap-2"><h2 class="h6 fw-bold mb-1"><a href="/announcements/{{ a.id }}">{{ a.title }}</a></h2>
+        {% if current_user.role == 'admin' or a.author_id == current_user.id %}{{ confirm_post('/announcements/%d/delete'|format(a.id), '', 'btn-outline-danger', 'Delete this announcement?', 'trash') }}{% endif %}</div>
+      <div class="small text-muted mb-2">{{ a.author.full_name if a.author else 'System' }} · {{ a.created_at|dt }} · {{ a.recipient_count }} recipient(s){% if a.target_roles %} · {{ a.target_roles }}{% endif %}{% if a.send_email %} · <i class="bi bi-envelope"></i>{% endif %}</div>
+      <div class="small">{{ a.body|truncate(260)|nl2br }}</div>
+    </div></div>
+    {% else %}<div class="card">{{ empty('No announcements yet.', 'megaphone') }}</div>{% endfor %}
+  </div>
+</div>
+{% endblock %}

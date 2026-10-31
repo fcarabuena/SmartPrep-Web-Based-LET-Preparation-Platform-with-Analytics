@@ -24,6 +24,12 @@ from app.services.ratelimit import email_limiter, login_limiter  # noqa: E402
 from app.services.settings_store import clear_settings_cache  # noqa: E402
 
 logging.getLogger("httpx").setLevel(logging.WARNING)
+
+# Fast (insecure) Argon2 parameters for tests only; production uses the library defaults.
+import app.security as _security  # noqa: E402
+from argon2 import PasswordHasher  # noqa: E402
+
+_security._ph = PasswordHasher(time_cost=1, memory_cost=1024, parallelism=1)
 PASSWORD = "Passw0rd123"
 CSRF_RE = re.compile(r'name="csrf-token" content="([^"]+)"|name="csrf_token" value="([^"]+)"')
 

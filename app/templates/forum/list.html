@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import pager, empty with context %}
+{% block title %}Forum{% endblock %}
+{% block page_title %}Discussion Forum{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h1 class="h4 fw-bold mb-0">Discussion forum</h1>
+  <a class="btn btn-primary" href="/forum/new?category={{ filters.category }}&course={{ filters.course }}"><i class="bi bi-plus-lg"></i> New discussion</a>
+</div>
+<form class="card card-body mb-3" method="get">
+  <div class="row g-2">
+    <div class="col-md-5"><label class="visually-hidden" for="q">Search</label><input class="form-control" id="q" name="q" value="{{ filters.q }}" placeholder="Search discussions"></div>
+    <div class="col-6 col-md-3"><label class="visually-hidden" for="category">Category</label><select class="form-select" id="category" name="category"><option value="0">All categories</option>{% for c in categories %}<option value="{{ c.id }}" {% if filters.category == c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></div>
+    <div class="col-6 col-md-3"><label class="visually-hidden" for="course">Course</label><select class="form-select" id="course" name="course"><option value="0">All courses</option>{% for c in courses %}<option value="{{ c.id }}" {% if filters.course == c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></div>
+    <div class="col-md-1 d-grid"><button class="btn btn-outline-primary" aria-label="Filter"><i class="bi bi-funnel"></i></button></div>
+  </div>
+</form>
+<div class="card"><div class="list-group list-group-flush">
+  {% for t in threads %}
+  <a class="list-group-item list-group-item-action py-3" href="/forum/{{ t.id }}">
+    <div class="d-flex justify-content-between gap-2">
+      <span class="fw-semibold">{% if t.is_pinned %}<i class="bi bi-pin-angle-fill text-warning" title="Pinned"></i> {% endif %}{% if t.is_locked %}<i class="bi bi-lock-fill text-muted" title="Locked"></i> {% endif %}{{ t.title }}</span>
+      <span class="small text-muted text-nowrap"><i class="bi bi-chat"></i> {{ t.reply_count }}</span>
+    </div>
+    <div class="small text-muted">{{ t.author.full_name if t.author else 'Deleted user' }} · {{ t.course.name if t.course else (t.category.name if t.category else 'General') }} · active {{ t.last_activity_at|ago }}</div>
+  </a>
+  {% else %}{{ empty('No discussions yet. Start one!', 'chat-square-text') }}{% endfor %}
+</div></div>
+{{ pager(page, pages, '/forum?' ~ qs ~ '&') }}
+{% endblock %}

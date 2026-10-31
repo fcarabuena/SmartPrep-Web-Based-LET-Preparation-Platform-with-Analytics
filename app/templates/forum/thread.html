@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import confirm_post with context %}
+{% block title %}{{ t.title }}{% endblock %}
+{% block page_title %}Discussion Forum{% endblock %}
+{% block content %}
+<div class="row justify-content-center"><div class="col-xl-9">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+    <a href="/forum" class="small"><i class="bi bi-arrow-left"></i> Back to forum</a>
+    <div class="d-flex gap-1">
+      {% if current_user.is_staff %}
+      {{ confirm_post('/forum/%d/pin'|format(t.id), 'Unpin' if t.is_pinned else 'Pin', 'btn-outline-warning', 'Change pin status?', 'pin-angle') }}
+      {{ confirm_post('/forum/%d/lock'|format(t.id), 'Unlock' if t.is_locked else 'Lock', 'btn-outline-secondary', 'Change lock status?', 'lock') }}
+      {% endif %}
+      {% if current_user.is_staff or (t.author_id == current_user.id and not t.posts) %}
+      {{ confirm_post('/forum/%d/delete'|format(t.id), 'Delete', 'btn-outline-danger', 'Delete this thread and all replies?', 'trash') }}
+      {% endif %}
+    </div>
+  </div>
+  <div class="card mb-3"><div class="card-body">
+    <h1 class="h4 fw-bold">{% if t.is_pinned %}<i class="bi bi-pin-angle-fill text-warning"></i> {% endif %}{{ t.title }}</h1>
+    <div class="small text-muted mb-3">{{ t.author.full_name if t.author else 'Deleted user' }} ({{ t.author.role if t.author else '' }}) · {{ t.created_at|dt }} · {{ t.course.name if t.course else (t.category.name if t.category else 'General') }}</div>
+    <div class="forum-body">{{ t.body }}</div>
+  </div></div>
+  <h2 class="h6 text-muted mb-2">{{ t.posts|length }} repl{{ 'y' if t.posts|length == 1 else 'ies' }}</h2>
+  {% for p in t.posts %}
+  <div class="card mb-2"><div class="card-body py-3">
+    <div class="d-flex justify-content-between small mb-1">
+      <span class="fw-semibold">{{ p.author.full_name if p.author else 'Deleted user' }} {% if p.author and p.author.is_staff %}<span class="badge text-bg-success">{{ p.author.role }}</span>{% endif %}</span>
+      <span class="text-muted">{{ p.created_at|ago }}
+        {% if current_user.is_staff or p.author_id == current_user.id %}{{ confirm_post('/forum/posts/%d/delete'|format(p.id), '', 'btn-link text-danger p-0 ms-2', 'Delete this reply?', 'trash') }}{% endif %}</span>
+    </div>
+    <div class="forum-body small">{{ p.body }}</div>
+  </div></div>
+  {% endfor %}
+  <div id="bottom"></div>
+  {% if not t.is_locked or current_user.is_staff %}
+  <form method="post" action="/forum/{{ t.id }}/reply" class="card card-body mt-3">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <label class="form-label" for="body">Your reply</label>
+    <textarea class="form-control mb-2" id="body" name="body" rows="4" required></textarea>
+    <div><button class="btn btn-primary"><i class="bi bi-reply"></i> Reply</button></div>
+  </form>
+  {% else %}<div class="alert alert-secondary mt-3"><i class="bi bi-lock"></i> This discussion is locked.</div>{% endif %}
+</div></div>
+{% endblock %}

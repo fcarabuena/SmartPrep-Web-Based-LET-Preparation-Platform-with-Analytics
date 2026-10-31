@@ -1,7 +1,7 @@
 """Analytics pages: student progress, class analytics, at-risk, item analysis, admin analytics/health, reports."""
 from datetime import date, timedelta
 
-from fastapi import APIRouter, Depends, Form, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, Form, HTTPException, Request
 from fastapi.responses import RedirectResponse, Response
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -19,7 +19,7 @@ from app.services.analytics import (
     system_health,
 )
 from app.services.gamification import my_rank, total_points
-from app.services.notify import notify
+from app.services.notify import email_user, notify
 from app.services.recommendations import study_plan
 from app.services.reports import REPORT_TYPES, build_report, to_csv, to_pdf, to_xlsx
 from app.services.settings_store import get_setting
@@ -93,7 +93,8 @@ def student_drilldown(request: Request, student_id: int, category: int = 0, cour
 
 
 @router.post("/analytics/students/{student_id:int}/feedback")
-def send_feedback(request: Request, student_id: int, subject: str = Form(""), body: str = Form(""),
+def send_feedback(request: Request, student_id: int, background: BackgroundTasks, subject: str = Form(""),
+                  body: str = Form(""),
                   user: User = Depends(require_staff), db: Session = Depends(get_db)):
     student = db.get(User, student_id)
     if not student or student.role != "student":
@@ -109,12 +110,7 @@ def send_feedback(request: Request, student_id: int, subject: str = Form(""), bo
     msg.thread_id = msg.id
     db.commit()
     notify(db, student.id, f"New feedback from {user.full_name}", msg.subject, f"/inbox/{msg.id}", kind="feedback")
-    try:
-        from app.services.notify import email_user
-    except ImportError:
-        pass
-    else:
-        email_user(db, student, f"Feedback: {msg.subject}", body, f"/inbox/{msg.id}", request)
+    email_user(db, student, f"Feedback: {msg.subject}", body, f"/inbox/{msg.id}", background)
     flash(request, f"Feedback sent to {student.full_name}.")
     return RedirectResponse(f"/analytics/students/{student_id}", status_code=303)
 

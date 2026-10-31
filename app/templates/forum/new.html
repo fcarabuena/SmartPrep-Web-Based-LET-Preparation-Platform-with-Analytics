@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}New discussion{% endblock %}
+{% block page_title %}Discussion Forum{% endblock %}
+{% block content %}
+<div class="row justify-content-center"><div class="col-xl-8">
+  <a href="/forum" class="small"><i class="bi bi-arrow-left"></i> Back to forum</a>
+  <div class="card mt-2"><div class="card-header fw-semibold">Start a discussion</div><div class="card-body">
+    <form method="post" action="/forum/new">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <div class="row g-3">
+        <div class="col-12"><label class="form-label" for="title">Title</label><input class="form-control" id="title" name="title" maxlength="255" required></div>
+        <div class="col-md-6"><label class="form-label" for="category_id">Category</label><select class="form-select" id="category_id" name="category_id"><option value="0">General</option>{% for c in categories %}<option value="{{ c.id }}" {% if category == c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></div>
+        <div class="col-md-6"><label class="form-label" for="course_id">Course (optional)</label><select class="form-select" id="course_id" name="course_id"><option value="0">—</option>{% for c in courses %}<option value="{{ c.id }}" {% if course == c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></div>
+        <div class="col-12"><label class="form-label" for="body">Message</label><textarea class="form-control" id="body" name="body" rows="7" required></textarea>
+          <div class="form-text">Be respectful. Do not post copyrighted reviewer content or exam questions verbatim.</div></div>
+      </div>
+      <button class="btn btn-primary mt-3" type="submit">Post</button>
+    </form>
+  </div></div>
+</div></div>
+{% endblock %}

@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}{{ ann.title }}{% endblock %}
+{% block page_title %}Announcement{% endblock %}
+{% block content %}
+<div class="row justify-content-center"><div class="col-xl-8">
+  <a href="{{ '/announcements' if current_user.is_staff else '/notifications' }}" class="small"><i class="bi bi-arrow-left"></i> Back</a>
+  <div class="card mt-2"><div class="card-body p-4">
+    <span class="badge text-bg-primary mb-2"><i class="bi bi-megaphone"></i> Announcement</span>
+    <h1 class="h4 fw-bold">{{ ann.title }}</h1>
+    <div class="small text-muted mb-3">{{ ann.author.full_name if ann.author else 'System' }} · {{ ann.created_at|dt }}</div>
+    <div>{{ ann.body|nl2br }}</div>
+  </div></div>
+</div></div>
+{% endblock %}

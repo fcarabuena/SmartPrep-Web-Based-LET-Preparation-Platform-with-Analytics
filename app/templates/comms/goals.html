@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import empty, confirm_post with context %}
+{% block title %}Goals{% endblock %}
+{% block page_title %}Goals{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-xl-8">
+    <h1 class="h4 fw-bold mb-3">My goals</h1>
+    {% for g in items %}
+    <div class="card mb-3"><div class="card-body">
+      <div class="d-flex justify-content-between gap-2">
+        <div>
+          <h2 class="h6 fw-bold mb-0">{{ g.goal.title }}</h2>
+          <div class="small text-muted">{{ g.metric_label }} · target {{ g.goal.target_value|round(1) }} · due {{ g.goal.deadline|dt }}
+            {% if g.status == 'active' %}({{ g.days_left }} day{{ 's' if g.days_left != 1 }} left){% endif %}</div>
+        </div>
+        <div class="text-nowrap">
+          {% if g.status == 'done' %}<span class="badge text-bg-success"><i class="bi bi-check2-circle"></i> Achieved</span>
+          {% elif g.status == 'overdue' %}<span class="badge text-bg-danger"><i class="bi bi-clock"></i> Overdue</span>
+          {% else %}<span class="badge text-bg-primary">In progress</span>{% endif %}
+          {{ confirm_post('/goals/%d/delete'|format(g.goal.id), '', 'btn-outline-danger', 'Delete this goal?', 'trash') }}
+        </div>
+      </div>
+      <div class="d-flex align-items-center gap-2 mt-2">
+        <div class="progress flex-grow-1" style="height: 10px" role="progressbar" aria-label="Goal progress" aria-valuenow="{{ g.pct|int }}" aria-valuemin="0" aria-valuemax="100">
+          <div class="progress-bar {{ 'bg-success' if g.status == 'done' else '' }}" style="width: {{ g.pct|int }}%"></div></div>
+        <span class="small fw-semibold">{{ g.current }} / {{ g.goal.target_value|round(1) }}</span>
+      </div>
+    </div></div>
+    {% else %}<div class="card">{{ empty('No goals yet. Set one to keep yourself on track!', 'bullseye') }}</div>{% endfor %}
+  </div>
+  <div class="col-xl-4">
+    <div class="card">
+      <div class="card-header fw-semibold"><i class="bi bi-plus-circle"></i> New goal</div>
+      <div class="card-body">
+        <form method="post" action="/goals">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <div class="mb-2"><label class="form-label small" for="g-title">Title</label><input class="form-control" id="g-title" name="title" placeholder="e.g. Answer 200 questions this month" required></div>
+          <div class="mb-2"><label class="form-label small" for="g-metric">Measure</label>
+            <select class="form-select" id="g-metric" name="metric">{% for k, v in metrics.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select></div>
+          <div class="mb-2"><label class="form-label small" for="g-cat">Category (for category mastery)</label>
+            <select class="form-select" id="g-cat" name="category_id"><option value="0">—</option>{% for c in categories %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}</select></div>
+          <div class="row g-2 mb-3">
+            <div class="col-6"><label class="form-label small" for="g-target">Target</label><input class="form-control" type="number" step="0.5" min="0.5" id="g-target" name="target_value" required></div>
+            <div class="col-6"><label class="form-label small" for="g-deadline">Deadline</label><input class="form-control" type="date" id="g-deadline" name="deadline" value="{{ default_deadline }}" min="{{ today }}" required></div>
+          </div>
+          <button class="btn btn-primary" type="submit">Create goal</button>
+        </form>
+        <p class="small text-muted mt-3 mb-0">Progress is calculated automatically from your quizzes since the goal was created. Goals also appear on your dashboard and calendar.</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

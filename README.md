@@ -17,7 +17,7 @@ psycopg 3 · PostgreSQL (Neon) / SQLite (local) · pytest
 | 3 | Assessments: exams/quizzes, timer, results, grades | ✅ |
 | 4 | Recommendations, adaptive practice, study plan, gamification | ✅ |
 | 5 | Analytics & reports | ✅ |
-| 6 | Notifications, inbox, calendar, goals, forum | ⏳ |
+| 6 | Notifications, inbox, calendar, goals, forum | ✅ |
 | 7 | Web scraping & optional Gemini generation | ⏳ |
 | 8 | Hardening, demo data, docs | ⏳ |
 
@@ -115,6 +115,20 @@ Tests use an in-memory SQLite database and never touch the network.
 - **Report builder** (`/reports`): user activity, performance, content usage, engagement; date range + filters;
   preview; export CSV / Excel / PDF.
 - Aggregations run as grouped SQL (dialect-aware for PostgreSQL and SQLite); heavy views are cached for 60 s.
+
+### Communication & planning (Phase 6)
+- **Notifications** (bell + `/notifications`): new approved questions/resources, assessment published, due within
+  24 h, faculty feedback, badges, goals reached, forum replies, announcements. Deduplicated per event.
+  Deadline reminders are checked lazily on page load (at most every 10 minutes per session) — no cron job.
+- **Announcements** (`/announcements`): target roles, students who can see a course, or specific students; optional
+  email through Brevo.
+- **Inbox** (`/inbox`): direct messages between students, faculty and admins with threads, Inbox / Sent / Unread /
+  Drafts, course filter and search. Faculty feedback lands here.
+- **Calendar** (`/calendar`, FullCalendar): month / week / agenda views with a Today button; assessment due dates,
+  goal deadlines, personal events and class-wide events (staff).
+- **Goals** (`/goals`): targets for questions answered, quizzes passed, average score, points, readiness or category
+  mastery with automatic progress; shown on the dashboard and calendar.
+- **Forum** (`/forum`): threads per category/course, replies, search; faculty pin, lock and delete.
 
 ## Configuration
 
