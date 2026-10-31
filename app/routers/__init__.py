@@ -16,6 +16,7 @@ from app.routers import (
     profile,
     questions,
     resources,
+    scrape_ai,
 )
 
 ROUTERS = [
@@ -36,4 +37,5 @@ ROUTERS = [
     inbox.router,
     planning.router,
     forum.router,
+    scrape_ai.router,
 ]

@@ -99,6 +99,12 @@
         <div><span class="text-muted">Created</span> {{ question.created_at|dt }} by {{ question.created_by.full_name if question.created_by else 'system' }}</div>
         {% if question.reviewed_by %}<div><span class="text-muted">Reviewed</span> {{ question.reviewed_at|dt }} by {{ question.reviewed_by.full_name }}</div>{% endif %}
         {% if question.review_note %}<div class="mt-1"><span class="text-muted">Review note:</span> {{ question.review_note }}</div>{% endif %}
+        {% if settings.gemini_enabled %}
+        <form method="post" action="/questions/{{ question.id }}/improve" class="mt-3">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <button class="btn btn-sm btn-outline-primary"><i class="bi bi-stars"></i> Improve wording with AI</button>
+        </form>
+        {% endif %}
         <form method="post" action="/questions/{{ question.id }}/delete" class="mt-3" data-confirm="Delete this question permanently?">
           <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
           <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i> Delete question</button>

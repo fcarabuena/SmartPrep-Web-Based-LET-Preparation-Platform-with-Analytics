@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import topic_select, empty with context %}
+{% block title %}Web Scraping{% endblock %}
+{% block page_title %}Web Scraping{% endblock %}
+{% block content %}
+<div class="alert alert-warning d-flex gap-2"><i class="bi bi-shield-exclamation fs-5"></i>
+  <div><strong>Scrape only permitted sources.</strong> Use open educational resources, your own institution's pages, or sites whose terms allow it.
+    Never scrape copyrighted reviewers or paid content. The bot identifies itself, obeys robots.txt, waits 1 second between requests,
+    times out after 10 seconds and fetches at most {{ max_pages }} pages per job. Everything extracted goes to the review queue first.</div></div>
+<div class="row g-4">
+  <div class="col-xl-6">
+    <div class="card">
+      <div class="card-header fw-semibold"><i class="bi bi-globe2"></i> New scrape job</div>
+      <div class="card-body">
+        <form method="post" action="/scrape">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <div class="mb-3"><label class="form-label" for="urls">URL(s) <span class="small text-muted">(one per line, max {{ max_pages }})</span></label>
+            <textarea class="form-control" id="urls" name="urls" rows="4" placeholder="https://example.edu/review/assessment-quiz" required></textarea></div>
+          <div class="mb-3"><label class="form-label" for="topic_id">Target topic</label>{{ topic_select('topic_id', topic_groups, 0, required=True) }}</div>
+          <fieldset class="mb-3"><legend class="form-label fs-6">Parser</legend>
+            <div class="form-check"><input class="form-check-input" type="radio" name="parser" id="p-mcq" value="mcq_text" checked>
+              <label class="form-check-label" for="p-mcq">Numbered MCQ text <span class="small text-muted">— “1. … A. … D. … Answer: B … Explanation: …”</span></label></div>
+            <div class="form-check"><input class="form-check-input" type="radio" name="parser" id="p-css" value="css">
+              <label class="form-check-label" for="p-css">CSS selectors</label></div>
+          </fieldset>
+          <div class="row g-2 mb-3 small">
+            <div class="col-md-4"><label class="form-label" for="sel_question">Question block</label><input class="form-control form-control-sm" id="sel_question" name="sel_question" placeholder=".question"></div>
+            <div class="col-md-4"><label class="form-label" for="sel_stem">Stem</label><input class="form-control form-control-sm" id="sel_stem" name="sel_stem" placeholder=".stem"></div>
+            <div class="col-md-4"><label class="form-label" for="sel_choices">Choices</label><input class="form-control form-control-sm" id="sel_choices" name="sel_choices" placeholder="li"></div>
+            <div class="col-md-6"><label class="form-label" for="sel_answer">Answer (optional)</label><input class="form-control form-control-sm" id="sel_answer" name="sel_answer" placeholder=".answer"></div>
+            <div class="col-md-6"><label class="form-label" for="sel_rationale">Rationale (optional)</label><input class="form-control form-control-sm" id="sel_rationale" name="sel_rationale" placeholder=".explanation"></div>
+            <div class="col-12 text-muted">Only used with the CSS parser.</div>
+          </div>
+          <div class="form-check mb-3"><input class="form-check-input" type="checkbox" id="confirm_permission" name="confirm_permission" value="true" required>
+            <label class="form-check-label" for="confirm_permission">I confirm these sources permit this use.</label></div>
+          <button class="btn btn-primary" type="submit"><i class="bi bi-play-fill"></i> Start job</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-xl-6">
+    <div class="card">
+      <div class="card-header fw-semibold">Recent jobs</div>
+      <div class="list-group list-group-flush">
+        {% for j in items %}
+        <a class="list-group-item list-group-item-action" href="/scrape/{{ j.id }}">
+          <div class="d-flex justify-content-between"><span class="fw-semibold">Job #{{ j.id }} · {{ j.parser|replace('_', ' ') }}</span>
+            <span class="badge text-bg-{{ {'queued': 'secondary', 'running': 'info', 'done': 'primary', 'failed': 'danger', 'saved': 'success'}[j.status] }}">{{ j.status }}</span></div>
+          <div class="small text-muted text-truncate">{{ j.urls.split('\n')|first }}{% if j.urls.count('\n') %} +{{ j.urls.count('\n') }} more{% endif %}</div>
+          <div class="small text-muted">{{ j.pages_fetched }} page(s) · {{ j.items_found }} question(s) · {{ j.created_at|ago }}</div>
+        </a>
+        {% else %}{{ empty('No scrape jobs yet.', 'globe2') }}{% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

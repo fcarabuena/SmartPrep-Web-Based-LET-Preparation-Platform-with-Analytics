@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import topic_select, empty with context %}
+{% block title %}Scrape job #{{ job.id }}{% endblock %}
+{% block page_title %}Web Scraping{% endblock %}
+{% block head %}{% if job.status in ('queued', 'running') %}<meta http-equiv="refresh" content="3">{% endif %}{% endblock %}
+{% block content %}
+<a href="/scrape" class="small"><i class="bi bi-arrow-left"></i> All jobs</a>
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-2 mb-3">
+  <h1 class="h4 fw-bold mb-0">Scrape job #{{ job.id }} <span class="badge text-bg-secondary fs-6">{{ job.status }}</span></h1>
+  <span class="small text-muted">{{ job.pages_fetched }} page(s) fetched · {{ job.items_found }} question(s) found · target: {{ topic.name if topic else '—' }}</span>
+</div>
+{% if job.status in ('queued', 'running') %}
+<div class="alert alert-info"><span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Working… (1 request per second). This page refreshes automatically.</div>
+{% endif %}
+{% if job.error %}<div class="alert alert-danger small">{{ job.error }}</div>{% endif %}
+{% if result.log %}
+<details class="mb-3"><summary class="small">Fetch log ({{ result.log|length }})</summary>
+  <ul class="small mt-2">{% for line in result.log %}<li>{{ line }}</li>{% endfor %}</ul></details>
+{% endif %}
+{% if job.status == 'done' %}
+<form method="post" action="/scrape/{{ job.id }}/save">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <div class="card mb-3"><div class="card-body row g-2 align-items-end">
+    <div class="col-md-6"><label class="form-label small" for="topic_id">Save questions to topic</label>{{ topic_select('topic_id', topic_groups, job.topic_id, required=True) }}</div>
+    <div class="col-md-6 text-md-end"><button class="btn btn-success" type="submit"><i class="bi bi-save"></i> Save checked items as pending review</button></div>
+  </div></div>
+  <h2 class="h6 fw-bold">Extracted questions ({{ result.questions|length }}) — edit before saving</h2>
+  {% for q in result.questions %}{% set i = loop.index0 %}
+  <div class="card mb-3 {% if q._errors or q._duplicate %}border-warning{% endif %}"><div class="card-body">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <div class="form-check"><input class="form-check-input" type="checkbox" name="keep" value="{{ i }}" id="keep{{ i }}" {% if not q._errors and not q._duplicate %}checked{% endif %}>
+        <label class="form-check-label fw-semibold" for="keep{{ i }}">Keep item {{ loop.index }}</label></div>
+      <span class="small">{% if q._duplicate %}<span class="badge text-bg-warning">Duplicate of an existing question</span>{% endif %}
+        {% for e in q._errors %}<span class="badge text-bg-light border text-danger">{{ e }}</span>{% endfor %}</span>
+    </div>
+    <input type="hidden" name="q{{ i }}_source_url" value="{{ q.source_url }}">
+    <label class="visually-hidden" for="q{{ i }}_stem">Stem</label>
+    <textarea class="form-control form-control-sm mb-2" id="q{{ i }}_stem" name="q{{ i }}_stem" rows="2">{{ q.stem }}</textarea>
+    <div class="row g-2">
+      {% for k in 'abcd' %}<div class="col-md-6"><div class="input-group input-group-sm"><span class="input-group-text">{{ k|upper }}</span>
+        <input class="form-control" name="q{{ i }}_choice_{{ k }}" value="{{ q['choice_' ~ k] }}" aria-label="Choice {{ k|upper }}"></div></div>{% endfor %}
+      <div class="col-6 col-md-2"><label class="small" for="q{{ i }}_correct">Key</label><select class="form-select form-select-sm" id="q{{ i }}_correct" name="q{{ i }}_correct">
+        <option value="">?</option>{% for k in 'ABCD' %}<option {% if q.correct == k %}selected{% endif %}>{{ k }}</option>{% endfor %}</select></div>
+      <div class="col-6 col-md-2"><label class="small" for="q{{ i }}_difficulty">Difficulty</label><select class="form-select form-select-sm" id="q{{ i }}_difficulty" name="q{{ i }}_difficulty">
+        {% for d in ['easy', 'medium', 'hard'] %}<option {% if d == 'medium' %}selected{% endif %}>{{ d }}</option>{% endfor %}</select></div>
+      <div class="col-md-8"><label class="small" for="q{{ i }}_rationalization">Rationalization</label><input class="form-control form-control-sm" id="q{{ i }}_rationalization" name="q{{ i }}_rationalization" value="{{ q.rationalization }}"></div>
+    </div>
+    <div class="small text-muted mt-1 text-truncate">Source: {{ q.source_url }}</div>
+  </div></div>
+  {% else %}<div class="card mb-3">{{ empty('No questions were recognized. Try the other parser or different selectors.', 'search') }}</div>{% endfor %}
+
+  <h2 class="h6 fw-bold mt-4">Resource links found ({{ result.links|length }})</h2>
+  <div class="card mb-3"><div class="list-group list-group-flush">
+    {% for l in result.links %}{% set i = loop.index0 %}
+    <label class="list-group-item d-flex gap-2 align-items-center">
+      <input class="form-check-input" type="checkbox" name="keep_link" value="{{ i }}">
+      <input type="hidden" name="l{{ i }}_url" value="{{ l.url }}"><input type="hidden" name="l{{ i }}_kind" value="{{ l.kind }}">
+      <input class="form-control form-control-sm" name="l{{ i }}_title" value="{{ l.title }}" aria-label="Title">
+      <span class="badge text-bg-light border">{{ l.kind }}</span>
+      <a href="{{ l.url }}" target="_blank" rel="noopener noreferrer" class="small text-truncate" style="max-width: 260px">{{ l.url }}</a>
+    </label>
+    {% else %}<div class="list-group-item small text-muted">No resource links captured.</div>{% endfor %}
+  </div></div>
+  <button class="btn btn-success" type="submit"><i class="bi bi-save"></i> Save checked items as pending review</button>
+</form>
+{% elif job.status == 'saved' %}
+<div class="alert alert-success">This job's results were saved. <a href="/questions/review?source=scraped">Open the review queue</a>.</div>
+{% endif %}
+{% endblock %}

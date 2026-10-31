@@ -18,7 +18,7 @@ psycopg 3 · PostgreSQL (Neon) / SQLite (local) · pytest
 | 4 | Recommendations, adaptive practice, study plan, gamification | ✅ |
 | 5 | Analytics & reports | ✅ |
 | 6 | Notifications, inbox, calendar, goals, forum | ✅ |
-| 7 | Web scraping & optional Gemini generation | ⏳ |
+| 7 | Web scraping & optional Gemini generation | ✅ |
 | 8 | Hardening, demo data, docs | ⏳ |
 
 ## Local setup (Windows 11)
@@ -129,6 +129,20 @@ Tests use an in-memory SQLite database and never touch the network.
 - **Goals** (`/goals`): targets for questions answered, quizzes passed, average score, points, readiness or category
   mastery with automatic progress; shown on the dashboard and calendar.
 - **Forum** (`/forum`): threads per category/course, replies, search; faculty pin, lock and delete.
+
+### Content input: scraping & AI (Phase 7)
+- **Web scraping** (`/scrape`, faculty): one job = up to 20 URLs + a target topic, parsed with the
+  **numbered MCQ text** parser (`1. … A. … D. … Answer: B … Explanation: …`) or **CSS selectors**. The bot sends a
+  custom User-Agent, obeys `robots.txt`, waits 1 s between requests to a host, times out after 10 s, skips
+  non-HTML and pages over 2 MB, and refuses private/loopback addresses (SSRF protection). Runs in the web process via
+  `BackgroundTasks`; the page auto-refreshes. Extracted questions and captured resource links are shown in an
+  editable preview and saved as **pending review** (links are saved hidden). Faculty must confirm the source permits
+  scraping.
+- **Gemini (optional)** (`/ai/generate`, needs `GEMINI_API_KEY`): generate up to 20 original questions with
+  rationalizations for a topic and difficulty, or "Improve wording with AI" on any question. The model must return
+  strict JSON; each item is validated (and a suggestion that changes the key is discarded). Everything is saved as
+  **pending review**. The menu item and routes disappear when no key is set.
+- Tests use HTML fixtures (`tests/fixtures`), a mocked HTTP transport and a fake Gemini client — no live network.
 
 ## Configuration
 

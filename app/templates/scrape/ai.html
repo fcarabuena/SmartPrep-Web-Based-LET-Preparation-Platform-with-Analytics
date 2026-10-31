@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import topic_select with context %}
+{% block title %}AI Question Generator{% endblock %}
+{% block page_title %}AI Question Generator{% endblock %}
+{% block content %}
+<div class="row justify-content-center"><div class="col-xl-7">
+  <div class="card">
+    <div class="card-header fw-semibold"><i class="bi bi-stars"></i> Generate questions with Google Gemini</div>
+    <div class="card-body">
+      <p class="small text-muted">Gemini drafts original four-option items with rationalizations. Every item is validated and saved as
+        <strong>pending review</strong> — a faculty member must check accuracy before students can see it.</p>
+      <form method="post" action="/ai/generate">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <div class="mb-3"><label class="form-label" for="topic_id">Topic</label>{{ topic_select('topic_id', topic_groups, 0, required=True) }}</div>
+        <div class="row g-3 mb-3">
+          <div class="col-6"><label class="form-label" for="difficulty">Difficulty</label><select class="form-select" id="difficulty" name="difficulty">
+            {% for d in ['easy', 'medium', 'hard'] %}<option {% if d == 'medium' %}selected{% endif %}>{{ d }}</option>{% endfor %}</select></div>
+          <div class="col-6"><label class="form-label" for="count">How many (1–20)</label><input class="form-control" type="number" min="1" max="20" id="count" name="count" value="5"></div>
+        </div>
+        <button class="btn btn-primary" type="submit"><i class="bi bi-stars"></i> Generate</button>
+        <span class="small text-muted ms-2">This can take up to a minute.</span>
+      </form>
+    </div>
+  </div>
+</div></div>
+{% endblock %}
