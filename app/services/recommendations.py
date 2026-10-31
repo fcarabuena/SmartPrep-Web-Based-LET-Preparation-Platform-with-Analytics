@@ -34,15 +34,21 @@ def level_for(mastery: float | None) -> str:
     return "advanced"
 
 
-def _resources_for_topic(db: Session, user: User, topic_id: int, level: str, n: int) -> list[Resource]:
+def _resources_for_topic(db: Session, user: User, topic_id: int, level: str, n: int,
+                         viewed: set[int] | None = None) -> list[Resource]:
     """Approved resources for a topic, preferring the target level and unviewed items; videos/articles first."""
     if n <= 0:
         return []
     rows = db.scalars(select(Resource).where(Resource.topic_id == topic_id, Resource.approved.is_(True))).all()
-    viewed = set(db.scalars(select(ResourceView.resource_id).where(ResourceView.user_id == user.id)))
+    if viewed is None:
+        viewed = _viewed(db, user)
     kind_rank = {"video": 0, "article": 1, "file": 2, "link": 3}
     rows = sorted(rows, key=lambda r: (r.level != level, r.id in viewed, kind_rank.get(r.kind, 4), -r.view_count))
     return list(rows[:n])
+
+
+def _viewed(db: Session, user: User) -> set[int]:
+    return set(db.scalars(select(ResourceView.resource_id).where(ResourceView.user_id == user.id)))
 
 
 def recommendations_for_attempt(db: Session, attempt: Attempt) -> dict:
@@ -77,9 +83,10 @@ def recommendations_for_attempt(db: Session, attempt: Attempt) -> dict:
 def recommended_resource_ids(db: Session, user: User) -> set[int]:
     """Resources currently recommended to the user (weak-topic resources); used to award view points."""
     out: set[int] = set()
+    viewed = _viewed(db, user)
     for tid, m in topic_mastery(db, user.id).items():
         if m < 85:
-            out.update(r.id for r in _resources_for_topic(db, user, tid, level_for(m), 5))
+            out.update(r.id for r in _resources_for_topic(db, user, tid, level_for(m), 5, viewed))
     return out
 
 
@@ -105,9 +112,10 @@ def study_plan(db: Session, user: User, limit: int = 12) -> list[dict]:
                      "level": level_for(m)})
     plan.sort(key=lambda p: (p["mastery"] is None, p["mastery"] if p["mastery"] is not None else 0, -p["available"]))
     plan = plan[:limit]
+    viewed = _viewed(db, user)
     for p in plan:
         n = 1 if p["level"] == "advanced" else (2 if p["level"] == "standard" else 3)
-        p["resources"] = _resources_for_topic(db, user, p["topic"].id, p["level"], n)
+        p["resources"] = _resources_for_topic(db, user, p["topic"].id, p["level"], n, viewed)
     return plan
 
 

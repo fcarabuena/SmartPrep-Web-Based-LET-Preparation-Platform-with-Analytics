@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Backups{% endblock %}
+{% block page_title %}Backups{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-xl-5">
+    <div class="card">
+      <div class="card-body p-4">
+        <h1 class="h5 fw-bold"><i class="bi bi-database-down"></i> Download a backup</h1>
+        <p class="small text-muted">A ZIP file with one CSV per core table plus a manifest. Generated on demand in memory — nothing is written to the server's disk.</p>
+        <ul class="small">
+          <li>Password hashes, TOTP secrets and Google IDs are <strong>never</strong> exported.</li>
+          <li>Uploaded file contents are not included (resource rows keep their metadata).</li>
+          <li>Neon also keeps point-in-time history on its free plan; this export is an extra, portable copy.</li>
+        </ul>
+        <a class="btn btn-primary" href="/admin/backups/download"><i class="bi bi-download"></i> Download ZIP</a>
+      </div>
+    </div>
+  </div>
+  <div class="col-xl-7">
+    <div class="card">
+      <div class="card-header fw-semibold">Included tables</div>
+      <div class="table-responsive"><table class="table table-sm mb-0">
+        <thead class="table-light"><tr><th>Table</th><th class="text-end">Rows</th></tr></thead>
+        <tbody>{% for t, n in counts.items() %}<tr><td><code>{{ t }}</code>{% if t in excluded %} <span class="small text-muted">(excludes {{ excluded[t]|join(', ') }})</span>{% endif %}</td><td class="text-end">{{ n }}</td></tr>{% endfor %}</tbody>
+      </table></div>
+    </div>
+  </div>
+</div>
+{% endblock %}

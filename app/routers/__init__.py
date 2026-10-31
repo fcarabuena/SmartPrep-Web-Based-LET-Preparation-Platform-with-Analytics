@@ -2,6 +2,7 @@ from app.routers import (
     admin_settings,
     admin_users,
     analytics,
+    backups,
     assessments_admin,
     auth,
     content,
@@ -38,4 +39,5 @@ ROUTERS = [
     planning.router,
     forum.router,
     scrape_ai.router,
+    backups.router,
 ]

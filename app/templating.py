@@ -99,7 +99,9 @@ def has_route(request: Request, name: str) -> bool:
     """Lets templates hide navigation for features that are not mounted."""
     names = getattr(request.app.state, "route_names", None)
     if names is None:
-        names = {getattr(r, "name", None) for r in request.app.routes}
+        from app.routing_util import route_names
+
+        names = route_names(request.app)
         request.app.state.route_names = names
     return name in names
 

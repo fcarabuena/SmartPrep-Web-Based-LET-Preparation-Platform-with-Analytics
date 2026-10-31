@@ -11,7 +11,7 @@ from app.deps import require_any, require_staff, require_student
 from app.models import Badge, Category, Course, PointsLedger, User, UserBadge
 from app.models.assessment import KIND_GAME, KIND_QUIZ_BEE
 from app.models.gamification import BADGE_RULES, POINT_REASONS
-from app.services.assessments import availability, visible_assessments
+from app.services.assessments import availability_many, visible_assessments
 from app.services.gamification import (
     award_badge_manually,
     current_streak,
@@ -36,7 +36,7 @@ def hub(request: Request, user: User = Depends(require_student), db: Session = D
               if b.id not in earned_ids]
     history = db.scalars(select(PointsLedger).where(PointsLedger.user_id == user.id)
                          .order_by(PointsLedger.created_at.desc()).limit(15)).all()
-    games = [{"a": a, "av": availability(db, a, user)} for a in visible_assessments(db, user, (KIND_GAME, KIND_QUIZ_BEE))]
+    games = availability_many(db, visible_assessments(db, user, (KIND_GAME, KIND_QUIZ_BEE)), user)
     public = get_setting(db, "leaderboard_public")
     rank, of = my_rank(db, user.id)
     return render(request, "gamification/hub.html", {

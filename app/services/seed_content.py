@@ -5,7 +5,9 @@ from sqlalchemy.orm import Session
 from app.db import utcnow
 from app.models import Badge, Course, Question, Resource, Topic
 from app.services.content import stem_hash
+from app.services.seed_data.generators import generated_questions
 from app.services.seed_data.questions import SAMPLE_QUESTIONS, SAMPLE_RESOURCES
+from app.services.seed_data.questions_extra import EXTRA_QUESTIONS
 
 DEFAULT_BADGES = [
     # code, name, description, icon, color, rule_type, threshold
@@ -24,20 +26,36 @@ def _topic_id(db: Session, course: str, topic: str) -> int | None:
     return db.scalar(select(Topic.id).join(Course).where(Course.name == course, Topic.name == topic))
 
 
-def seed_sample_questions(db: Session) -> dict[str, int]:
-    created_q = created_r = 0
-    for (course, topic), items in SAMPLE_QUESTIONS.items():
+def _insert_questions(db: Session, bank: dict[tuple[str, str], list[tuple]], created_by_id: int | None = None) -> int:
+    existing = set(db.scalars(select(Question.stem_hash)))
+    created = 0
+    for (course, topic), items in bank.items():
         tid = _topic_id(db, course, topic)
         if tid is None:
             continue
         for stem, a, b, c, d, correct, rat, diff, comp in items:
             h = stem_hash(stem)
-            if db.scalar(select(Question.id).where(Question.stem_hash == h)):
+            if h in existing:
                 continue
+            existing.add(h)
             db.add(Question(topic_id=tid, stem=stem, choice_a=a, choice_b=b, choice_c=c, choice_d=d, correct=correct,
                             rationalization=rat, difficulty=diff, competency=comp, source_type="manual",
-                            status="approved", stem_hash=h, reviewed_at=utcnow()))
-            created_q += 1
+                            status="approved", stem_hash=h, reviewed_at=utcnow(), created_by_id=created_by_id,
+                            reviewed_by_id=created_by_id))
+            created += 1
+    db.commit()
+    return created
+
+
+def seed_extra_questions(db: Session, created_by_id: int | None = None) -> int:
+    """Demo bank: 60 more handwritten items plus ~190 generated computation items."""
+    return _insert_questions(db, EXTRA_QUESTIONS, created_by_id) + _insert_questions(db, generated_questions(),
+                                                                                     created_by_id)
+
+
+def seed_sample_questions(db: Session) -> dict[str, int]:
+    created_r = 0
+    created_q = _insert_questions(db, SAMPLE_QUESTIONS)
     for course, topic, title, kind, url, level, desc in SAMPLE_RESOURCES:
         if db.scalar(select(Resource.id).where(Resource.url == url)):
             continue

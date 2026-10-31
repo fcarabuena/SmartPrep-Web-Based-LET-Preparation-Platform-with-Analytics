@@ -125,11 +125,14 @@ def submitted_attempts(db: Session, a: Assessment, user: User, include_adaptive:
     return list(db.scalars(stmt.order_by(Attempt.attempt_no)))
 
 
-def availability(db: Session, a: Assessment, user: User) -> Availability:
+def availability(db: Session, a: Assessment, user: User, _pre: tuple | None = None) -> Availability:
     now = utcnow()
-    in_progress = db.scalar(select(Attempt).where(Attempt.assessment_id == a.id, Attempt.user_id == user.id,
-                                                  Attempt.status == "in_progress", Attempt.is_adaptive.is_(False)))
-    used = len(submitted_attempts(db, a, user))
+    if _pre is None:
+        in_progress = db.scalar(select(Attempt).where(Attempt.assessment_id == a.id, Attempt.user_id == user.id,
+                                                      Attempt.status == "in_progress", Attempt.is_adaptive.is_(False)))
+        used = len(submitted_attempts(db, a, user))
+    else:
+        in_progress, used = _pre
     if in_progress:
         return Availability(True, "in_progress", "You have an attempt in progress.", used, in_progress)
     if not a.is_published and not user.is_staff:
@@ -141,6 +144,20 @@ def availability(db: Session, a: Assessment, user: User) -> Availability:
     if a.max_attempts and used >= a.max_attempts:
         return Availability(False, "max_reached", f"You have used all {a.max_attempts} attempt(s).", used)
     return Availability(True, "open", "Open", used)
+
+
+def availability_many(db: Session, items: list[Assessment], user: User) -> list[dict]:
+    """[{"a": assessment, "av": Availability}] using two grouped queries instead of two per assessment."""
+    ids = [a.id for a in items]
+    if not ids:
+        return []
+    used = dict(db.execute(select(Attempt.assessment_id, func.count(Attempt.id)).where(
+        Attempt.user_id == user.id, Attempt.assessment_id.in_(ids), Attempt.status == "submitted",
+        Attempt.is_adaptive.is_(False)).group_by(Attempt.assessment_id)).all())
+    open_ = {at.assessment_id: at for at in db.scalars(select(Attempt).where(
+        Attempt.user_id == user.id, Attempt.assessment_id.in_(ids), Attempt.status == "in_progress",
+        Attempt.is_adaptive.is_(False)))}
+    return [{"a": a, "av": availability(db, a, user, (open_.get(a.id), used.get(a.id, 0)))} for a in items]
 
 
 # ------------------------------------------------------------------ attempts

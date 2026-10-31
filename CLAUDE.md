@@ -95,4 +95,11 @@ At the very end, tell me exactly what I must do by hand to deploy: create the Ne
 
 ## Dev notes (kept by Claude)
 - Local dev machine has Python 3.13 (no 3.12); code must stay 3.12-compatible (Render uses 3.12.7).
-- Progress per phase is recorded in git history ("Phase N: <name>") and README "Status" section.
+- Progress per phase is recorded in git history ("Phase N: <name>") and README "Build status" section.
+- FastAPI 0.162 keeps included routers as `_IncludedRouter` wrappers in `app.routes`; always walk routes with
+  `app.routing_util.iter_api_routes` (used by `has_route()` for the sidebar and by the permission tests).
+- Jinja macros that need `csrf_token` must be imported `with context`. No inline `<script>`/`on*=` handlers (CSP);
+  pass data to JS via `<script type="application/json">`.
+- Windows shell: run Python edit scripts with `PYTHONUTF8=1`; heredocs containing quotes can break in the Bash tool,
+  so write scripts to the scratchpad instead.
+- Tests: `.venv\Scripts\python -m pytest` (in-memory SQLite, mocked network, fast Argon2 params in conftest).

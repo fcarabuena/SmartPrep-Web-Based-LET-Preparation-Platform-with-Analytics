@@ -12,6 +12,7 @@ from app.services.assessments import (
     EXAM_TABS,
     AttemptError,
     availability,
+    availability_many,
     expire_overdue,
     grade_rows,
     is_expired,
@@ -31,7 +32,7 @@ router = APIRouter(tags=["exams"])
 
 
 def _with_availability(db: Session, user: User, items: list[Assessment]) -> list[dict]:
-    return [{"a": a, "av": availability(db, a, user)} for a in items]
+    return availability_many(db, items, user)
 
 
 @router.get("/examinations", name="examinations")
@@ -65,14 +66,15 @@ def quizzes(request: Request, category: int = 0, course: int = 0, user: User = D
         items = [a for a in items if a.category_id == category or (a.course and a.course.category_id == category)]
     groups: dict[str, list] = {}
     course_names = {c["id"]: (cat["name"], c["name"]) for cat in cats for c in cat["courses"]}
-    for a in items:
+    for item in availability_many(db, items, user):
+        a = item["a"]
         if a.course_id in course_names:
             key = " › ".join(course_names[a.course_id])
         elif a.category:
             key = a.category.name
         else:
             key = "Mixed subjects"
-        groups.setdefault(key, []).append({"a": a, "av": availability(db, a, user)})
+        groups.setdefault(key, []).append(item)
     title = "All quizzes"
     if course:
         title = " › ".join(course_names.get(course, ("Quizzes", "")))
