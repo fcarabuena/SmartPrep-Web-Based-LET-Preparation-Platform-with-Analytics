@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import pager, empty, pct_badge with context %}
+{% block title %}Submissions{% endblock %}
+{% block page_title %}Submissions{% endblock %}
+{% block content %}
+<h1 class="h4 fw-bold mb-3">Submissions <span class="text-muted fs-6">({{ total }})</span></h1>
+<form class="card card-body mb-3" method="get">
+  <div class="row g-2">
+    <div class="col-md-5"><label class="visually-hidden" for="assessment">Assessment</label><select class="form-select" id="assessment" name="assessment"><option value="">All assessments</option>
+      {% for a in assessments %}<option value="{{ a.id }}" {% if filters.assessment == a.id %}selected{% endif %}>{{ a.title }}</option>{% endfor %}</select></div>
+    <div class="col-md-4"><label class="visually-hidden" for="q">Student</label><input class="form-control" id="q" name="q" value="{{ filters.q }}" placeholder="Student name or email"></div>
+    <div class="col-8 col-md-2"><label class="visually-hidden" for="result">Result</label><select class="form-select" id="result" name="result"><option value="">Any result</option>
+      <option value="passed" {% if filters.result == 'passed' %}selected{% endif %}>Passed</option><option value="failed" {% if filters.result == 'failed' %}selected{% endif %}>Failed</option></select></div>
+    <div class="col-4 col-md-1 d-grid"><button class="btn btn-outline-primary" aria-label="Filter"><i class="bi bi-funnel"></i></button></div>
+  </div>
+</form>
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light"><tr><th>Student</th><th>Assessment</th><th>Attempt</th><th>Score</th><th>Result</th><th class="d-none d-md-table-cell">Time</th><th class="d-none d-md-table-cell">Submitted</th><th></th></tr></thead>
+      <tbody>
+      {% for at in items %}
+      <tr>
+        <td><div class="fw-semibold">{{ at.user.full_name }}</div><div class="small text-muted">{{ at.user.email }}</div></td>
+        <td class="small">{{ at.display_title }}</td>
+        <td>#{{ at.attempt_no }}{% if at.auto_submitted %} <span class="badge text-bg-light border" title="Submitted automatically when time ran out">auto</span>{% endif %}</td>
+        <td>{{ pct_badge(at.score_pct) }} <span class="small text-muted">{{ at.correct_count }}/{{ at.total_questions }}</span></td>
+        <td>{% if at.passed %}<span class="text-success fw-semibold">Passed</span>{% else %}<span class="text-danger fw-semibold">Failed</span>{% endif %}<div class="small text-muted">≥ {{ '%.0f'|format(at.threshold) }}%</div></td>
+        <td class="d-none d-md-table-cell small">{{ at.time_spent_seconds|duration }}</td>
+        <td class="d-none d-md-table-cell small">{{ at.submitted_at|dt }}</td>
+        <td class="text-end"><a class="btn btn-sm btn-outline-primary" href="/attempts/{{ at.id }}/result">View</a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="8">{{ empty('No submissions yet.', 'inboxes') }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{{ pager(page, pages, '/submissions?' ~ qs ~ '&') }}
+{% endblock %}

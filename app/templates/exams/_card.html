@@ -1,0 +1,36 @@
+{# expects: item = {"a": Assessment, "av": Availability} #}
+{% set a = item.a %}{% set av = item.av %}
+{% set past_due = a.due_at and a.due_at < now() %}
+<div class="card h-100 assessment-card">
+  <div class="card-body d-flex flex-column">
+    <div class="d-flex justify-content-between align-items-start gap-2">
+      <h3 class="h6 fw-bold mb-1">{{ a.title }}</h3>
+      {% if av.status == 'in_progress' %}<span class="badge text-bg-warning">In progress</span>
+      {% elif past_due %}<span class="badge text-bg-danger">Past Due</span>
+      {% elif av.status == 'upcoming' %}<span class="badge text-bg-info">Opens {{ a.open_at|dt('%b %d') }}</span>
+      {% elif av.status == 'max_reached' %}<span class="badge text-bg-secondary">Completed</span>
+      {% else %}<span class="badge text-bg-success">Open</span>{% endif %}
+    </div>
+    <div class="small text-muted mb-2">{{ a.course.name if a.course else (a.category.name if a.category else 'All subjects') }}</div>
+    {% if a.description %}<p class="small mb-2">{{ a.description }}</p>{% endif %}
+    <ul class="list-unstyled small text-muted mb-3">
+      <li><i class="bi bi-list-ol me-1"></i>{{ a.question_count }} questions</li>
+      <li><i class="bi bi-stopwatch me-1"></i>{{ '%d minutes'|format(a.time_limit_minutes) if a.time_limit_minutes else 'No time limit' }}</li>
+      <li><i class="bi bi-calendar-event me-1"></i>Due: {% if a.due_at %}<span class="{% if past_due %}text-danger fw-semibold{% endif %}">{{ a.due_at|dt }}</span>{% else %}No due date{% endif %}</li>
+      <li><i class="bi bi-arrow-repeat me-1"></i>Attempts: {{ av.attempts_used }}{% if a.max_attempts %} / {{ a.max_attempts }}{% endif %}</li>
+      {% if a.access_code %}<li><i class="bi bi-key me-1"></i>Access code required</li>{% endif %}
+    </ul>
+    {% if a.instructions %}
+    <details class="small mb-3"><summary class="text-primary">Instructions</summary><div class="mt-2 p-2 bg-light rounded">{{ a.instructions|nl2br }}</div></details>
+    {% endif %}
+    <div class="mt-auto d-flex gap-2">
+      {% if av.status == 'in_progress' %}
+        <a class="btn btn-warning btn-sm" href="/attempts/{{ av.in_progress.id }}"><i class="bi bi-play-fill"></i> Resume</a>
+      {% elif av.can_start %}
+        <a class="btn btn-primary btn-sm" href="/assessments/{{ a.id }}/start"><i class="bi bi-play-fill"></i> {{ 'Retake' if av.attempts_used else 'Start' }}</a>
+      {% else %}
+        <a class="btn btn-outline-secondary btn-sm" href="/assessments/{{ a.id }}/start">Details</a>
+      {% endif %}
+    </div>
+  </div>
+</div>

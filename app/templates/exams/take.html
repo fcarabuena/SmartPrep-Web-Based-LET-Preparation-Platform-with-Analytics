@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}{{ attempt.display_title }}{% endblock %}
+{% block page_title %}{{ attempt.display_title }}{% endblock %}
+{% block content %}
+<script type="application/json" id="attempt-config">{{ {"save_url": "/api/attempts/%d/save"|format(attempt.id), "remaining": remaining, "result_url": "/attempts/%d/result"|format(attempt.id)}|tojson }}</script>
+<form method="post" action="/attempts/{{ attempt.id }}/submit" id="attemptForm" data-no-disable
+      data-confirm="Submit your answers now? You cannot change them afterwards.">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <input type="hidden" name="auto" value="0" id="autoField">
+  <div class="row g-4">
+    <div class="col-lg-8 order-2 order-lg-1">
+      {% for ans in attempt.answers %}
+      {% set q = ans.question %}
+      <div class="card question-card mb-3" data-question data-answer-id="{{ ans.id }}" id="q{{ loop.index }}">
+        <div class="card-body">
+          <div class="d-flex justify-content-between small text-muted mb-2">
+            <span>Question {{ loop.index }} of {{ attempt.answers|length }}</span>
+            <span>{{ q.topic.name }}</span>
+          </div>
+          <fieldset>
+            <legend class="fs-6 fw-semibold mb-3">{{ q.stem|nl2br }}</legend>
+            {% for orig in ans.choice_order %}
+            <label class="choice">
+              <input class="form-check-input" type="radio" name="ans_{{ ans.id }}" value="{{ orig }}" {% if ans.chosen == orig %}checked{% endif %}>
+              <span class="choice-letter">{{ 'ABCD'[loop.index0] }}.</span>
+              <span>{{ q.choice(orig) }}</span>
+            </label>
+            {% endfor %}
+          </fieldset>
+          <input type="hidden" name="time_{{ ans.id }}" value="0" data-time-field>
+          <div class="d-flex justify-content-between mt-3 js-only">
+            <button type="button" class="btn btn-outline-secondary btn-sm" data-prev {% if loop.first %}disabled{% endif %}><i class="bi bi-chevron-left"></i> Previous</button>
+            {% if loop.last %}
+            <button type="submit" class="btn btn-success btn-sm"><i class="bi bi-send"></i> Submit</button>
+            {% else %}
+            <button type="button" class="btn btn-primary btn-sm" data-next>Next <i class="bi bi-chevron-right"></i></button>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+      <noscript><button type="submit" class="btn btn-success btn-lg">Submit answers</button></noscript>
+    </div>
+    <div class="col-lg-4 order-1 order-lg-2">
+      <div class="card position-sticky" style="top: 80px">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            {% if remaining is not none %}
+            <span class="timer-pill" id="timer" role="timer" aria-live="off"><i class="bi bi-stopwatch"></i> <span id="timerText">--:--</span></span>
+            {% else %}<span class="text-muted small"><i class="bi bi-infinity"></i> No time limit</span>{% endif %}
+            <span class="small text-muted" id="saveStatus" aria-live="polite">Autosave on</span>
+          </div>
+          <div class="small mb-2"><span id="answeredCount">{{ answered }}</span> of {{ attempt.answers|length }} answered</div>
+          <div class="progress mb-3" style="height: 6px"><div class="progress-bar" id="answeredBar" style="width: {{ (100 * answered / (attempt.answers|length or 1))|round }}%"></div></div>
+          <nav class="qnav" aria-label="Question navigation">
+            {% for ans in attempt.answers %}<a href="#q{{ loop.index }}" data-goto="{{ loop.index0 }}" class="{% if ans.chosen %}answered{% endif %}">{{ loop.index }}</a>{% endfor %}
+          </nav>
+          <button type="submit" class="btn btn-success w-100 mt-3"><i class="bi bi-send"></i> Submit {{ 'exam' if attempt.kind == 'mock_exam' else 'quiz' }}</button>
+          <p class="small text-muted mt-2 mb-0">Threshold to pass this attempt: <strong>{{ '%.0f'|format(attempt.threshold) }}%</strong></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+{% endblock %}
+{% block scripts %}<script src="/static/js/take.js"></script>{% endblock %}

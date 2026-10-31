@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import empty, confirm_post with context %}
+{% block title %}Assessments{% endblock %}
+{% block page_title %}Assessments{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h1 class="h4 fw-bold mb-0">Assessments</h1>
+  <div class="dropdown">
+    <button class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-plus-lg"></i> New</button>
+    <ul class="dropdown-menu dropdown-menu-end">
+      {% for k, label in kinds.items() %}<li><a class="dropdown-item" href="/assessments/new?kind={{ k }}">{{ label }}</a></li>{% endfor %}
+    </ul>
+  </div>
+</div>
+<form class="card card-body mb-3" method="get">
+  <div class="row g-2">
+    <div class="col-md-5"><label class="visually-hidden" for="q">Search</label><input class="form-control" id="q" name="q" value="{{ q }}" placeholder="Search title"></div>
+    <div class="col-6 col-md-3"><label class="visually-hidden" for="kind">Type</label><select class="form-select" id="kind" name="kind"><option value="">All types</option>
+      {% for k, label in kinds.items() %}<option value="{{ k }}" {% if kind == k %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+    <div class="col-6 col-md-3"><label class="visually-hidden" for="category">Category</label><select class="form-select" id="category" name="category"><option value="">All categories</option>
+      {% for c in categories %}<option value="{{ c.id }}" {% if category == c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></div>
+    <div class="col-md-1 d-grid"><button class="btn btn-outline-primary" aria-label="Filter"><i class="bi bi-funnel"></i></button></div>
+  </div>
+</form>
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light"><tr><th>Assessment</th><th class="d-none d-lg-table-cell">Scope</th><th>Items</th><th class="d-none d-md-table-cell">Due</th><th class="d-none d-md-table-cell">Results</th><th>Status</th><th class="text-end">Actions</th></tr></thead>
+      <tbody>
+      {% for a in items %}
+      {% set st = stats.get(a.id) %}
+      <tr>
+        <td><div class="fw-semibold">{{ a.title }}</div>
+          <div class="small text-muted">{{ a.kind_label }}{% if a.time_limit_minutes %} · {{ a.time_limit_minutes }} min{% endif %}{% if a.max_attempts %} · max {{ a.max_attempts }} attempts{% endif %}
+          {% if a.access_code %} · code <span class="d-none" id="code{{ a.id }}"><code>{{ a.access_code }}</code></span> <button type="button" class="btn btn-link btn-sm p-0 align-baseline" data-reveal="code{{ a.id }}"><i class="bi bi-eye"></i> Show</button>{% endif %}</div></td>
+        <td class="d-none d-lg-table-cell small">{{ a.course.name if a.course else (a.category.name if a.category else 'All subjects') }}{% if a.topics %}<div class="text-muted">{{ a.topics|length }} topic(s)</div>{% endif %}</td>
+        <td><span class="{% if pool.get(a.id, 0) < a.question_count %}text-danger fw-semibold{% endif %}" title="Questions available in pool">{{ a.question_count }}</span>
+          <div class="small text-muted">{{ a.selection_mode }} · pool {{ pool.get(a.id, 0) }}</div></td>
+        <td class="d-none d-md-table-cell small">{{ a.due_at|dt if a.due_at else '—' }}</td>
+        <td class="d-none d-md-table-cell small">{% if st %}{{ st[0] }} attempts · avg {{ '%.0f'|format(st[1] or 0) }}% · {{ st[2] or 0 }} passed{% else %}<span class="text-muted">No attempts</span>{% endif %}</td>
+        <td>{% if a.is_published %}<span class="badge text-bg-success">Published</span>{% else %}<span class="badge text-bg-secondary">Draft</span>{% endif %}</td>
+        <td class="text-end text-nowrap">
+          <a class="btn btn-sm btn-outline-primary" href="/assessments/{{ a.id }}/edit" aria-label="Edit"><i class="bi bi-pencil"></i></a>
+          <a class="btn btn-sm btn-outline-secondary" href="/assessments/{{ a.id }}/questions" aria-label="Questions" title="Pick questions"><i class="bi bi-list-check"></i></a>
+          <a class="btn btn-sm btn-outline-secondary" href="/submissions?assessment={{ a.id }}" aria-label="Submissions" title="Submissions"><i class="bi bi-inboxes"></i></a>
+          <a class="btn btn-sm btn-outline-secondary" href="/assessments/{{ a.id }}/start" aria-label="Preview" title="Preview"><i class="bi bi-play"></i></a>
+          {{ confirm_post('/assessments/%d/publish'|format(a.id), 'Unpublish' if a.is_published else 'Publish', 'btn-outline-success', 'Change publication status?') }}
+          {{ confirm_post('/assessments/%d/delete'|format(a.id), '', 'btn-outline-danger', 'Delete this assessment and all attempts?', 'trash') }}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="7">{{ empty('No assessments yet. Create a practice quiz or mock exam.', 'journal-text') }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

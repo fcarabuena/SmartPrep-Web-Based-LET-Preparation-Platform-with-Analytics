@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import empty with context %}
+{% block title %}Examinations{% endblock %}
+{% block page_title %}Examinations{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-xl-9">
+    <h1 class="h4 fw-bold mb-3">Mock examinations</h1>
+    {% if tabs %}
+    <ul class="nav nav-pills mb-3 gap-1" role="tablist">
+      {% for t in tabs %}
+      <li class="nav-item" role="presentation">
+        <button class="nav-link {% if t.code == tab %}active{% endif %}" data-bs-toggle="pill" data-bs-target="#tab-{{ t.code }}" type="button" role="tab">
+          {{ t.label }} <span class="badge text-bg-light ms-1">{{ t['items']|length }}</span></button>
+      </li>
+      {% endfor %}
+    </ul>
+    <div class="tab-content">
+      {% for t in tabs %}
+      <div class="tab-pane fade {% if t.code == tab %}show active{% endif %}" id="tab-{{ t.code }}" role="tabpanel">
+        <div class="row g-3">
+          {% for item in t['items'] %}<div class="col-md-6">{% include "exams/_card.html" %}</div>
+          {% else %}<div class="col-12"><div class="card">{{ empty('No mock exams in ' ~ t.label ~ ' yet.', 'journal-check') }}</div></div>{% endfor %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}<div class="card">{{ empty('No examinations available yet.', 'journal-check') }}</div>{% endif %}
+  </div>
+  <div class="col-xl-3">
+    <div class="card">
+      <div class="card-header fw-semibold"><i class="bi bi-info-circle"></i> Exam instructions</div>
+      <div class="card-body small">
+        <ul class="ps-3 mb-3">
+          <li>Mock exams simulate the LET: one best answer per item.</li>
+          <li>The timer runs on the server — it keeps running even if you close the page.</li>
+          <li>Answers are saved automatically every few seconds.</li>
+          <li>When time is up, your exam is submitted automatically.</li>
+          <li>Some exams need an access code from your faculty.</li>
+        </ul>
+        <div class="fw-semibold mb-1">Passing score</div>
+        <p class="mb-0">75% on your 1st attempt, 80% on the 2nd and 85% from the 3rd attempt onward.</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

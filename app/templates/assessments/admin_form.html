@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit' if a else 'New' }} assessment{% endblock %}
+{% block page_title %}Assessments{% endblock %}
+{% block content %}
+<a href="/assessments" class="small"><i class="bi bi-arrow-left"></i> Back to assessments</a>
+<form method="post" class="mt-2">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <div class="row g-4">
+    <div class="col-xl-8">
+      <div class="card mb-4">
+        <div class="card-header fw-semibold">Details</div>
+        <div class="card-body row g-3">
+          <div class="col-md-8"><label class="form-label" for="title">Title</label>
+            <input class="form-control" id="title" name="title" value="{{ form.title }}" maxlength="200" required></div>
+          <div class="col-md-4"><label class="form-label" for="kind">Type</label>
+            <select class="form-select" id="kind" name="kind">{% for k, label in kinds.items() %}<option value="{{ k }}" {% if form.kind == k %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+          <div class="col-12"><label class="form-label" for="description">Description</label>
+            <input class="form-control" id="description" name="description" value="{{ form.description or '' }}"></div>
+          <div class="col-12"><label class="form-label" for="instructions">Instructions shown before starting</label>
+            <textarea class="form-control" id="instructions" name="instructions" rows="3">{{ form.instructions or '' }}</textarea></div>
+        </div>
+      </div>
+      <div class="card mb-4">
+        <div class="card-header fw-semibold">Questions</div>
+        <div class="card-body row g-3">
+          <div class="col-md-6"><label class="form-label" for="category_id">Category</label>
+            <select class="form-select" id="category_id" name="category_id"><option value="0">All categories (e.g. quiz bee)</option>
+              {% for c in categories %}<option value="{{ c.id }}" {% if form.category_id|int == c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></div>
+          <div class="col-md-6"><label class="form-label" for="course_id">Course</label>
+            <select class="form-select" id="course_id" name="course_id"><option value="0">Whole category</option>
+              {% for c in courses %}<option value="{{ c.id }}" {% if form.course_id|int == c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></div>
+          <div class="col-12"><label class="form-label" for="topic_ids">Topics <span class="text-muted small">(optional; Ctrl/⌘-click to select several)</span></label>
+            <select class="form-select" id="topic_ids" name="topic_ids" multiple size="6">
+              {% for g in topic_groups %}<optgroup label="{{ g.label }}">{% for tid, tname in g.topics %}<option value="{{ tid }}" {% if tid in form.topic_ids %}selected{% endif %}>{{ tname }}</option>{% endfor %}</optgroup>{% endfor %}
+            </select></div>
+          <div class="col-md-4"><label class="form-label" for="selection_mode">Selection</label>
+            <select class="form-select" id="selection_mode" name="selection_mode">
+              <option value="auto" {% if form.selection_mode == 'auto' %}selected{% endif %}>Auto-draw from pool</option>
+              <option value="manual" {% if form.selection_mode == 'manual' %}selected{% endif %}>Pick manually</option></select></div>
+          <div class="col-md-4"><label class="form-label" for="question_count">Number of questions</label>
+            <input class="form-control" type="number" min="1" max="200" id="question_count" name="question_count" value="{{ form.question_count }}"></div>
+          <div class="col-md-4"><label class="form-label" for="difficulty">Difficulty (auto-draw)</label>
+            <select class="form-select" id="difficulty" name="difficulty">{% for d in ['mixed', 'easy', 'medium', 'hard'] %}<option value="{{ d }}" {% if form.difficulty == d %}selected{% endif %}>{{ d|capitalize }}</option>{% endfor %}</select></div>
+          <div class="col-md-6"><div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="randomize_questions" name="randomize_questions" value="true" {% if form.randomize_questions %}checked{% endif %}><label class="form-check-label" for="randomize_questions">Randomize question order</label></div></div>
+          <div class="col-md-6"><div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="randomize_choices" name="randomize_choices" value="true" {% if form.randomize_choices %}checked{% endif %}><label class="form-check-label" for="randomize_choices">Randomize choice order</label></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-xl-4">
+      <div class="card mb-4">
+        <div class="card-header fw-semibold">Schedule &amp; access</div>
+        <div class="card-body row g-3">
+          <div class="col-6"><label class="form-label" for="time_limit_minutes">Time limit (min)</label>
+            <input class="form-control" type="number" min="1" max="600" id="time_limit_minutes" name="time_limit_minutes" value="{{ form.time_limit_minutes or '' }}" placeholder="None"></div>
+          <div class="col-6"><label class="form-label" for="max_attempts">Max attempts</label>
+            <input class="form-control" type="number" min="1" id="max_attempts" name="max_attempts" value="{{ form.max_attempts or '' }}" placeholder="Unlimited"></div>
+          <div class="col-12"><label class="form-label" for="open_at">Opens (PH time)</label>
+            <input class="form-control" type="datetime-local" id="open_at" name="open_at" value="{{ form.open_at or '' }}"></div>
+          <div class="col-12"><label class="form-label" for="due_at">Due (PH time)</label>
+            <input class="form-control" type="datetime-local" id="due_at" name="due_at" value="{{ form.due_at or '' }}"></div>
+          <div class="col-12"><label class="form-label" for="access_code">Access code <span class="text-muted small">(optional)</span></label>
+            <div class="input-group"><input class="form-control" type="password" id="access_code" name="access_code" value="{{ form.access_code or '' }}" maxlength="40" autocomplete="off">
+              <button class="btn btn-outline-secondary" type="button" data-toggle-password="access_code" aria-label="Show access code"><i class="bi bi-eye"></i></button></div></div>
+        </div>
+      </div>
+      <div class="card mb-4">
+        <div class="card-header fw-semibold">Points</div>
+        <div class="card-body row g-3">
+          <div class="col-6"><label class="form-label" for="points_per_correct">Per correct answer</label>
+            <input class="form-control" type="number" min="0" max="100" id="points_per_correct" name="points_per_correct" value="{{ form.points_per_correct }}"></div>
+          <div class="col-6"><label class="form-label" for="pass_bonus">Pass bonus</label>
+            <input class="form-control" type="number" min="0" max="1000" id="pass_bonus" name="pass_bonus" value="{{ form.pass_bonus }}"></div>
+          <div class="col-12"><div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="leaderboard_public" name="leaderboard_public" value="true" {% if form.leaderboard_public %}checked{% endif %}><label class="form-check-label" for="leaderboard_public">Show on public leaderboard</label></div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-body">
+          <div class="form-check form-switch mb-3"><input class="form-check-input" type="checkbox" id="is_published" name="is_published" value="true" {% if form.is_published %}checked{% endif %}><label class="form-check-label fw-semibold" for="is_published">Published (visible to students)</label></div>
+          <p class="small text-muted">Pass thresholds come from system settings: 75% on attempt 1, 80% on attempt 2, 85% on attempt 3+ (by default).</p>
+          <button class="btn btn-primary w-100" type="submit">Save assessment</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+{% endblock %}

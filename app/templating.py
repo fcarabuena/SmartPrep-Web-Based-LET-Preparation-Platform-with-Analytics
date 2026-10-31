@@ -127,4 +127,8 @@ def render(request: Request, name: str, ctx: dict | None = None, status_code: in
     ctx["flashes"] = pop_flashes(request)
     ctx["counts"] = unread_count(request, user) if user else {"notifications": 0, "messages": 0}
     ctx.setdefault("active", "")
+    if user is not None and user.role == "student" and getattr(request.state, "db", None) is not None:
+        from app.services.content import nav_categories
+
+        ctx.setdefault("nav_categories", nav_categories(request.state.db, user.major))
     return templates.TemplateResponse(request, name, ctx, status_code=status_code)

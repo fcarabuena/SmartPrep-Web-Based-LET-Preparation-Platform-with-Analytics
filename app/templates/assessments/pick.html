@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import topic_select, empty with context %}
+{% block title %}Pick questions{% endblock %}
+{% block page_title %}Assessments{% endblock %}
+{% block content %}
+<a href="/assessments" class="small"><i class="bi bi-arrow-left"></i> Back to assessments</a>
+<h1 class="h4 fw-bold mt-2">{{ a.title }} <span class="text-muted fs-6">· {{ chosen|length }} selected</span></h1>
+<p class="small text-muted">Selecting questions here switches this assessment to manual selection. Only approved questions within the assessment's scope are listed.</p>
+<div class="row g-4">
+  <div class="col-lg-6">
+    <form method="post" class="card h-100" data-confirm="Remove the selected questions?">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <div class="card-header d-flex justify-content-between align-items-center"><span class="fw-semibold">Selected questions</span>
+        <button class="btn btn-sm btn-outline-danger" type="submit"><i class="bi bi-dash-lg"></i> Remove checked</button></div>
+      <div class="list-group list-group-flush" style="max-height: 70vh; overflow:auto">
+        {% for item in chosen %}
+        <label class="list-group-item d-flex gap-2"><input class="form-check-input mt-1" type="checkbox" name="remove" value="{{ item.question_id }}">
+          <span class="small"><span class="text-muted">{{ loop.index }}.</span> {{ item.question.stem|truncate(150) }}</span></label>
+        {% else %}{{ empty('No questions selected yet.', 'list-check') }}{% endfor %}
+      </div>
+    </form>
+  </div>
+  <div class="col-lg-6">
+    <form method="get" class="row g-2 mb-2">
+      <div class="col-12 col-md-5"><label class="visually-hidden" for="q">Search</label><input class="form-control form-control-sm" id="q" name="q" value="{{ q }}" placeholder="Search"></div>
+      <div class="col-7 col-md-4"><label class="visually-hidden" for="topic">Topic</label>{{ topic_select('topic', topic_groups, topic, placeholder='Any topic', cls='form-select form-select-sm') }}</div>
+      <div class="col-3 col-md-2"><label class="visually-hidden" for="difficulty">Difficulty</label><select class="form-select form-select-sm" id="difficulty" name="difficulty"><option value="">Any</option>{% for d in ['easy','medium','hard'] %}<option value="{{ d }}" {% if difficulty == d %}selected{% endif %}>{{ d }}</option>{% endfor %}</select></div>
+      <div class="col-2 col-md-1 d-grid"><button class="btn btn-sm btn-outline-primary" aria-label="Search"><i class="bi bi-search"></i></button></div>
+    </form>
+    <form method="post" class="card">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <div class="card-header d-flex justify-content-between align-items-center"><span class="fw-semibold">Question pool ({{ pool|length }})</span>
+        <button class="btn btn-sm btn-primary" type="submit"><i class="bi bi-plus-lg"></i> Add checked</button></div>
+      <div class="list-group list-group-flush" style="max-height: 65vh; overflow:auto">
+        {% for q in pool %}
+        <label class="list-group-item d-flex gap-2"><input class="form-check-input mt-1" type="checkbox" name="add" value="{{ q.id }}">
+          <span class="small">{{ q.stem|truncate(150) }}<br><span class="text-muted">{{ q.topic.name }} · {{ q.difficulty }}</span></span></label>
+        {% else %}{{ empty('No more approved questions in scope.', 'patch-question') }}{% endfor %}
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

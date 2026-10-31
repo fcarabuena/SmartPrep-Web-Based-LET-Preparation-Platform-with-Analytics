@@ -14,7 +14,7 @@ psycopg 3 · PostgreSQL (Neon) / SQLite (local) · pytest
 |---|---|---|
 | 1 | Foundation: models, migrations, auth (register/verify/login/reset/2FA/Google), roles, layout, admin users | ✅ |
 | 2 | Content: categories/courses/topics, question bank, review queue, import, resources | ✅ |
-| 3 | Assessments: exams/quizzes, timer, results, grades | ⏳ |
+| 3 | Assessments: exams/quizzes, timer, results, grades | ✅ |
 | 4 | Recommendations, adaptive practice, study plan, gamification | ⏳ |
 | 5 | Analytics & reports | ⏳ |
 | 6 | Notifications, inbox, calendar, goals, forum | ⏳ |
@@ -65,6 +65,21 @@ Tests use an in-memory SQLite database and never touch the network.
 - **Resources** (`/resources`): links, videos, articles and small uploads (PDF/DOCX/PPTX/images, max 5 MB, type and
   content checked) stored in the database. Students browse and search them at `/materials`; every open is tracked.
 - **Seed content**: 100 original LET-style questions (10 per sample topic, each with a rationalization).
+
+### Assessments (Phase 3)
+- **Types:** practice quiz, mock exam (LET simulation), timed quiz game, quiz bee. Scope by category, course and/or
+  topics; auto-draw by difficulty or manual pick; randomized questions and choices; time limit; access code;
+  open/due dates; max attempts; points per correct answer and pass bonus (`/assessments`).
+- **Examinations** page with Prof Ed / Major Core / Gen Ed tabs, instructions, time limit, due date and "Past Due";
+  **Quizzes** page grouped by category and course.
+- **Taking:** one question at a time, question navigator, autosave every 15 s and on every answer, per-question time
+  tracking. The timer is enforced on the server (`deadline_at`); late saves and page loads auto-submit expired attempts
+  (no cron needed).
+- **Pass thresholds:** 75% (attempt 1), 80% (attempt 2), 85% (attempt 3+), configurable in `/admin/settings`; the
+  threshold used is stored on each attempt.
+- **Results:** score, pass/fail, chosen vs correct answer with rationalization for every item, Retake.
+- **Grades** (`/grades`): Passed / Failed / Missing / Not attempted with category/course filters, print stylesheet
+  and PDF export. Faculty see every attempt under `/submissions`.
 
 ## Configuration
 

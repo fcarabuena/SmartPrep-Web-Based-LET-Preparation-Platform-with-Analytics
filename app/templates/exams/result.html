@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}Results · {{ attempt.display_title }}{% endblock %}
+{% block page_title %}Results{% endblock %}
+{% block content %}
+{% if not is_owner %}<div class="alert alert-info small"><i class="bi bi-person"></i> Viewing submission of <strong>{{ attempt.user.full_name }}</strong> ({{ attempt.user.email }})</div>{% endif %}
+<div class="card mb-4 overflow-hidden">
+  <div class="row g-0">
+    <div class="col-md-4 text-white p-4 d-flex flex-column justify-content-center align-items-center text-center {{ 'bg-success' if attempt.passed else 'bg-danger' }}">
+      <div class="display-4 fw-bold">{{ '%.0f'|format(attempt.score_pct) }}%</div>
+      <div class="fs-5 fw-semibold">{{ 'PASSED' if attempt.passed else 'NOT YET PASSED' }}</div>
+      <div class="small opacity-75">Needed {{ '%.0f'|format(attempt.threshold) }}% on attempt #{{ attempt.attempt_no }}</div>
+    </div>
+    <div class="col-md-8 p-4">
+      <h1 class="h4 fw-bold mb-1">{{ attempt.display_title }}</h1>
+      <p class="text-muted small mb-3">Submitted {{ attempt.submitted_at|dt }}{% if attempt.auto_submitted %} (automatically when time ran out){% endif %}</p>
+      <div class="row g-3 text-center mb-3">
+        <div class="col-4"><div class="fw-bold fs-5">{{ attempt.correct_count }}/{{ attempt.total_questions }}</div><div class="small text-muted">Correct</div></div>
+        <div class="col-4"><div class="fw-bold fs-5">{{ attempt.time_spent_seconds|duration }}</div><div class="small text-muted">Time spent</div></div>
+        <div class="col-4"><div class="fw-bold fs-5">+{{ attempt.points_awarded }}</div><div class="small text-muted">Points</div></div>
+      </div>
+      {% if new_badges %}
+      <div class="alert alert-warning py-2 small mb-3"><i class="bi bi-award"></i> New badge{{ 's' if new_badges|length > 1 }}:
+        {% for b in new_badges %}<strong>{{ b.name }}</strong>{{ ', ' if not loop.last }}{% endfor %}!</div>
+      {% endif %}
+      {% if is_owner %}
+      <div class="d-flex flex-wrap gap-2 no-print">
+        {% if a and av and av.can_start and not attempt.is_adaptive %}
+        <a class="btn btn-primary" href="/assessments/{{ a.id }}/start"><i class="bi bi-arrow-repeat"></i> Retake</a>
+        {% endif %}
+        {% if has_route(request, 'regenerate') %}
+        <form method="post" action="/attempts/{{ attempt.id }}/regenerate">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <button class="btn btn-outline-primary" type="submit" title="New adaptive set weighted to your weak topics"><i class="bi bi-shuffle"></i> Regenerate Questions</button>
+        </form>
+        {% endif %}
+        <button class="btn btn-outline-secondary" data-print><i class="bi bi-printer"></i> Print</button>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-xl-8">
+    <h2 class="h5 fw-bold mb-3">Answer review</h2>
+    {% for ans in attempt.answers %}
+    {% set q = ans.question %}
+    <div class="card mb-3">
+      <div class="card-body">
+        <div class="d-flex justify-content-between small mb-2">
+          <span class="text-muted">{{ loop.index }}. {{ q.topic.course.name }} › {{ q.topic.name }}</span>
+          {% if ans.is_correct %}<span class="text-success fw-semibold"><i class="bi bi-check-circle-fill"></i> Correct</span>
+          {% elif ans.chosen %}<span class="text-danger fw-semibold"><i class="bi bi-x-circle-fill"></i> Wrong</span>
+          {% else %}<span class="text-secondary fw-semibold"><i class="bi bi-dash-circle"></i> No answer</span>{% endif %}
+        </div>
+        <p class="fw-semibold">{{ q.stem|nl2br }}</p>
+        {% for orig in ans.choice_order %}
+        <div class="result-choice {% if orig == q.correct %}correct{% elif orig == ans.chosen %}wrong{% endif %}">
+          <span class="choice-letter">{{ 'ABCD'[loop.index0] }}.</span> {{ q.choice(orig) }}
+          {% if orig == ans.chosen %}<span class="badge text-bg-dark ms-1">Your answer</span>{% endif %}
+          {% if orig == q.correct %}<span class="badge text-bg-success ms-1">Correct answer</span>{% endif %}
+        </div>
+        {% endfor %}
+        {% if q.rationalization %}<div class="rationale small mt-2"><div class="fw-semibold mb-1"><i class="bi bi-lightbulb"></i> Rationalization</div>{{ q.rationalization|nl2br }}</div>{% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  <div class="col-xl-4">
+    <div class="card position-sticky no-print" style="top: 80px">
+      <div class="card-header fw-semibold"><i class="bi bi-magic"></i> Recommended for you</div>
+      <div class="card-body small">
+        {% if recs.topics %}
+          <p class="text-muted">Based on the items you missed:</p>
+          {% for t in recs.topics %}
+          <div class="mb-3">
+            <div class="fw-semibold">{{ t.name }} <span class="badge text-bg-{{ t.mastery|score_class }}">{{ '%.0f'|format(t.mastery) }}% mastery</span></div>
+            <div class="text-muted">{{ t.wrong }} wrong · {{ t.level }} level</div>
+            {% if t.practice_url %}<a class="btn btn-sm btn-outline-primary mt-1" href="{{ t.practice_url }}"><i class="bi bi-play"></i> Practice this topic</a>{% endif %}
+          </div>
+          {% endfor %}
+        {% endif %}
+        {% if recs.resources %}
+          <div class="fw-semibold mb-2">Resources</div>
+          <ul class="list-unstyled mb-0">
+          {% for r in recs.resources %}
+            <li class="mb-2"><a href="/r/{{ r.id }}?rec=1" target="_blank" rel="noopener"><i class="bi bi-box-arrow-up-right"></i> {{ r.title }}</a>
+              <div class="text-muted">{{ r.kind }} · {{ r.level }}</div></li>
+          {% endfor %}
+          </ul>
+        {% elif not recs.topics %}
+          <p class="text-muted mb-0">{% if attempt.score_pct == 100 %}Perfect! Keep it up with advanced practice.{% else %}No specific recommendations yet.{% endif %}</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

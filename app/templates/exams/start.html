@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import pct_badge with context %}
+{% block title %}{{ a.title }}{% endblock %}
+{% block page_title %}{{ a.kind_label }}{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-xl-8">
+    <div class="card mb-4">
+      <div class="card-body p-4">
+        <span class="badge text-bg-primary mb-2">{{ a.kind_label }}</span>
+        <h1 class="h3 fw-bold">{{ a.title }}</h1>
+        {% if a.description %}<p class="text-muted">{{ a.description }}</p>{% endif %}
+        <div class="row g-3 my-3 text-center">
+          <div class="col-6 col-md-3"><div class="border rounded-3 p-2"><div class="small text-muted">Questions</div><div class="fw-bold fs-5">{{ a.question_count }}</div></div></div>
+          <div class="col-6 col-md-3"><div class="border rounded-3 p-2"><div class="small text-muted">Time limit</div><div class="fw-bold fs-5">{{ '%d min'|format(a.time_limit_minutes) if a.time_limit_minutes else '—' }}</div></div></div>
+          <div class="col-6 col-md-3"><div class="border rounded-3 p-2"><div class="small text-muted">Attempts</div><div class="fw-bold fs-5">{{ av.attempts_used }}{% if a.max_attempts %}/{{ a.max_attempts }}{% endif %}</div></div></div>
+          <div class="col-6 col-md-3"><div class="border rounded-3 p-2"><div class="small text-muted">To pass</div><div class="fw-bold fs-5">{{ '%.0f'|format(next_threshold) }}%</div></div></div>
+        </div>
+        <p class="small mb-1"><i class="bi bi-calendar-event"></i> Due: {% if a.due_at %}{{ a.due_at|dt }}{% if a.due_at < now() %} <span class="badge text-bg-danger">Past Due</span>{% endif %}{% else %}No due date{% endif %}</p>
+        {% if a.instructions %}
+        <div class="alert alert-light border mt-3"><div class="fw-semibold mb-1"><i class="bi bi-info-circle"></i> Instructions</div>{{ a.instructions|nl2br }}</div>
+        {% endif %}
+        {% if av.status == 'in_progress' %}
+          <a class="btn btn-warning btn-lg" href="/attempts/{{ av.in_progress.id }}"><i class="bi bi-play-fill"></i> Resume attempt</a>
+        {% elif av.can_start %}
+          <form method="post" action="/assessments/{{ a.id }}/start" class="mt-3">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            {% if a.access_code %}
+            <div class="mb-3" style="max-width: 320px">
+              <label class="form-label" for="access_code">Access code</label>
+              <div class="input-group">
+                <input class="form-control" type="password" id="access_code" name="access_code" required autocomplete="off">
+                <button class="btn btn-outline-secondary" type="button" data-toggle-password="access_code" aria-label="Show access code"><i class="bi bi-eye"></i></button>
+              </div>
+            </div>
+            {% endif %}
+            <button class="btn btn-primary btn-lg" type="submit"><i class="bi bi-play-fill"></i> {{ 'Retake' if av.attempts_used else 'Start' }} {{ 'exam' if a.is_exam else 'quiz' }}</button>
+            {% if a.time_limit_minutes %}<span class="small text-muted ms-2">The timer starts as soon as you click.</span>{% endif %}
+          </form>
+        {% else %}
+          <div class="alert alert-secondary mt-3 mb-0">{{ av.message }}</div>
+        {% endif %}
+      </div>
+    </div>
+    {% if history %}
+    <div class="card">
+      <div class="card-header fw-semibold">Your attempts</div>
+      <div class="table-responsive"><table class="table mb-0 align-middle">
+        <thead class="table-light"><tr><th>#</th><th>Score</th><th>Needed</th><th>Result</th><th>Time</th><th>Submitted</th><th></th></tr></thead>
+        <tbody>{% for at in history %}
+          <tr><td>{{ at.attempt_no }}</td><td>{{ pct_badge(at.score_pct) }}</td><td>{{ '%.0f'|format(at.threshold) }}%</td>
+            <td>{% if at.passed %}<span class="text-success fw-semibold">Passed</span>{% else %}<span class="text-danger fw-semibold">Failed</span>{% endif %}</td>
+            <td>{{ at.time_spent_seconds|duration }}</td><td class="small">{{ at.submitted_at|dt }}</td>
+            <td><a class="btn btn-sm btn-outline-primary" href="/attempts/{{ at.id }}/result">Review</a></td></tr>
+        {% endfor %}</tbody>
+      </table></div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

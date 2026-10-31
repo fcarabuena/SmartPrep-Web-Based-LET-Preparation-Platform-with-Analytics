@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import empty with context %}
+{% block title %}Quizzes{% endblock %}
+{% block page_title %}Quizzes{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-3">
+    <div class="card">
+      <div class="card-header fw-semibold">Browse</div>
+      <div class="list-group list-group-flush small">
+        <a class="list-group-item list-group-item-action {% if not category and not course %}active{% endif %}" href="/quizzes">All quizzes</a>
+        {% for cat in cats %}
+        <a class="list-group-item list-group-item-action fw-semibold {% if category == cat.id %}active{% endif %}" href="/quizzes?category={{ cat.id }}">{{ cat.name }}</a>
+          {% for c in cat.courses %}
+          <a class="list-group-item list-group-item-action ps-4 {% if course == c.id %}active{% endif %}" href="/quizzes?course={{ c.id }}">{{ c.name }}</a>
+          {% endfor %}
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-9">
+    <h1 class="h4 fw-bold mb-3">{{ title }}</h1>
+    {% for group, items in groups.items() %}
+      <h2 class="h6 text-muted text-uppercase mt-3 mb-2">{{ group }}</h2>
+      <div class="row g-3">
+        {% for item in items %}<div class="col-md-6 col-xxl-4">{% include "exams/_card.html" %}</div>{% endfor %}
+      </div>
+    {% else %}
+      <div class="card">{{ empty('No practice quizzes here yet. Check back soon or try the Study Plan for adaptive practice.', 'ui-checks') }}</div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

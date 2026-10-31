@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import empty, stat with context %}
+{% block title %}Grades{% endblock %}
+{% block page_title %}Grades{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h1 class="h4 fw-bold mb-0">My grades</h1>
+  <div class="d-flex gap-2 no-print">
+    <button class="btn btn-outline-secondary" data-print><i class="bi bi-printer"></i> Print Grades</button>
+    <a class="btn btn-outline-primary" href="/grades.pdf?category={{ category }}&course={{ course }}"><i class="bi bi-file-earmark-pdf"></i> PDF</a>
+  </div>
+</div>
+<div class="print-only mb-3"><h2 class="h5">Smart Prep · Grades of {{ current_user.full_name }}</h2><div class="small">{{ current_user.email }} · printed {{ now()|dt }}</div></div>
+<div class="row g-3 mb-3">
+  <div class="col-6 col-lg-3">{{ stat('Assessments', summary.total, 'journal-text', 'primary') }}</div>
+  <div class="col-6 col-lg-3">{{ stat('Passed', summary.passed, 'check2-circle', 'success') }}</div>
+  <div class="col-6 col-lg-3">{{ stat('Failed / Missing', summary.failed ~ ' / ' ~ summary.missing, 'x-circle', 'danger') }}</div>
+  <div class="col-6 col-lg-3">{{ stat('Average best score', ('%.1f%%'|format(summary.average)) if summary.average is not none else '—', 'percent', 'info') }}</div>
+</div>
+<form class="card card-body mb-3 filters" method="get" data-autosubmit>
+  <div class="row g-2">
+    <div class="col-md-5"><label class="visually-hidden" for="category">Category</label><select class="form-select" id="category" name="category"><option value="0">All categories</option>
+      {% for c in categories %}<option value="{{ c.id }}" {% if category == c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></div>
+    <div class="col-md-5"><label class="visually-hidden" for="course">Course</label><select class="form-select" id="course" name="course"><option value="0">All courses</option>
+      {% for c in courses %}<option value="{{ c.id }}" {% if course == c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></div>
+    <div class="col-md-2 d-grid"><button class="btn btn-outline-primary">Filter</button></div>
+  </div>
+</form>
+<div class="card">
+  <div class="table-responsive">
+    <table class="table align-middle mb-0">
+      <thead class="table-light"><tr><th>Title</th><th>Category</th><th>Due date</th><th>Status</th><th class="text-end">Score</th><th class="no-print"></th></tr></thead>
+      <tbody>
+      {% for r in rows %}
+      {% set a = r.assessment %}
+      <tr>
+        <td><div class="fw-semibold">{{ a.title }}</div><div class="small text-muted">{{ a.kind_label }}{% if r.attempts %} · {{ r.attempts }} attempt{{ 's' if r.attempts > 1 }}{% endif %}</div></td>
+        <td class="small">{{ a.category.name if a.category else 'Mixed' }}{% if a.course %}<div class="text-muted">{{ a.course.name }}</div>{% endif %}</td>
+        <td class="small">{{ a.due_at|dt if a.due_at else '—' }}</td>
+        <td>{% set colors = {'Passed': 'success', 'Failed': 'danger', 'Missing': 'dark', 'Not attempted': 'secondary', 'In progress': 'warning'} %}
+          <span class="badge text-bg-{{ colors[r.status] }}">{{ r.status }}</span></td>
+        <td class="text-end fw-semibold">{{ ('%.0f%%'|format(r.best.score_pct)) if r.best else '—' }}</td>
+        <td class="text-end no-print">{% if r.best %}<a class="btn btn-sm btn-outline-primary" href="/attempts/{{ r.best.id }}/result">Review</a>{% else %}<a class="btn btn-sm btn-outline-secondary" href="/assessments/{{ a.id }}/start">Open</a>{% endif %}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6">{{ empty('No graded assessments yet.', 'card-checklist') }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
