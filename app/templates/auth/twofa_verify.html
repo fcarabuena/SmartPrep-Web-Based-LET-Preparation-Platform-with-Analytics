@@ -1,0 +1,15 @@
+{% extends "auth/auth_base.html" %}
+{% block title %}Two-factor verification{% endblock %}
+{% block auth_content %}
+<div class="text-center mb-3"><i class="bi bi-shield-lock display-5 text-primary"></i></div>
+<h2 class="h4 fw-bold text-center mb-1">Two-factor verification</h2>
+<p class="text-muted text-center mb-4">Enter the 6-digit code from your authenticator app.</p>
+{% if error %}<div class="alert alert-danger" role="alert">{{ error }}</div>{% endif %}
+<form method="post" action="/2fa/verify">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <label for="code" class="visually-hidden">Authentication code</label>
+  <input class="form-control form-control-lg text-center otp-input mb-3" id="code" name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="7" required autofocus>
+  <button class="btn btn-primary btn-lg w-100" type="submit">Verify</button>
+</form>
+<p class="text-center mt-4 mb-0 small">Lost your device? Ask the administrator to reset your 2FA.</p>
+{% endblock %}

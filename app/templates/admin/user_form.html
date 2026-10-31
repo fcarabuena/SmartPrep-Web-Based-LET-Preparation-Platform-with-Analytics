@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit' if edit_user else 'New' }} user{% endblock %}
+{% block page_title %}User Management{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <a href="/admin/users" class="small"><i class="bi bi-arrow-left"></i> Back to users</a>
+    <div class="card mt-2">
+      <div class="card-header fw-semibold">{{ 'Edit ' ~ edit_user.full_name if edit_user else 'Create a new user' }}</div>
+      <div class="card-body">
+        <form method="post" action="{{ '/admin/users/%d/edit'|format(edit_user.id) if edit_user else '/admin/users/new' }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <div class="row g-3">
+            <div class="col-md-6"><label for="full_name" class="form-label">Full name</label>
+              <input class="form-control" id="full_name" name="full_name" value="{{ form.full_name or '' }}" required maxlength="150"></div>
+            <div class="col-md-6"><label for="email" class="form-label">Email</label>
+              <input type="email" class="form-control" id="email" name="email" value="{{ form.email or '' }}" required></div>
+            <div class="col-md-6"><label for="role" class="form-label">Role</label>
+              <select class="form-select" id="role" name="role">
+                {% for r in roles %}<option value="{{ r }}" {% if (form.role or 'student') == r %}selected{% endif %}>{{ r|capitalize }}</option>{% endfor %}
+              </select></div>
+            <div class="col-md-6"><label for="major" class="form-label">Major (students)</label>
+              <select class="form-select" id="major" name="major"><option value="">—</option>
+                {% for code, label in majors.items() %}<option value="{{ code }}" {% if form.major == code %}selected{% endif %}>{{ label }}</option>{% endfor %}
+              </select></div>
+            {% if edit_user %}
+            <div class="col-md-6">
+              <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="is_active" name="is_active" value="true" {% if form.is_active %}checked{% endif %}>
+                <label class="form-check-label" for="is_active">Active</label></div>
+              <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="email_verified" name="email_verified" value="true" {% if form.email_verified %}checked{% endif %}>
+                <label class="form-check-label" for="email_verified">Email verified</label></div>
+            </div>
+            <div class="col-md-6"><label for="new_password" class="form-label">Set new password <span class="text-muted small">(optional)</span></label>
+              <input type="password" class="form-control" id="new_password" name="new_password" autocomplete="new-password"></div>
+            {% else %}
+            <div class="col-md-6"><label for="password" class="form-label">Password <span class="text-muted small">(leave blank to generate)</span></label>
+              <input type="password" class="form-control" id="password" name="password" autocomplete="new-password"></div>
+            {% endif %}
+          </div>
+          <div class="alert alert-info small mt-3 mb-0"><i class="bi bi-info-circle"></i> Admin and faculty users must set up an authenticator app (TOTP 2FA) on their first sign-in.</div>
+          <button class="btn btn-primary mt-3" type="submit">{{ 'Save changes' if edit_user else 'Create user' }}</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

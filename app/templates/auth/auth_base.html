@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block body_class %}auth-body{% endblock %}
+{% block public %}
+<div class="auth-wrap">
+  <section class="auth-hero d-none d-lg-flex">
+    <div>
+      <div class="d-flex align-items-center gap-2 mb-4">
+        <img src="/static/img/logo.svg" alt="" width="48" height="48">
+        <span class="fs-3 fw-bold">Smart Prep</span>
+      </div>
+      <h1 class="display-6 fw-bold mb-3">Pass the LET with a plan.</h1>
+      <p class="lead opacity-75 mb-4">Web-based LET preparation with adaptive practice, mock exams, analytics and gamified progress tracking.</p>
+      <ul class="list-unstyled auth-points">
+        <li><i class="bi bi-check2-circle"></i> General, Professional &amp; Major Core reviews</li>
+        <li><i class="bi bi-check2-circle"></i> Timed mock exams with rationalizations</li>
+        <li><i class="bi bi-check2-circle"></i> Personalized study plans &amp; readiness score</li>
+        <li><i class="bi bi-check2-circle"></i> Badges, streaks and leaderboards</li>
+      </ul>
+      <p class="small opacity-50 mt-5 mb-0">Romblon State University – Cajidiocan Campus</p>
+    </div>
+  </section>
+  <section class="auth-panel">
+    <div class="auth-card">
+      <div class="d-lg-none text-center mb-4">
+        <img src="/static/img/logo.svg" alt="" width="48" height="48">
+        <div class="fs-4 fw-bold">Smart Prep</div>
+      </div>
+      {% include "partials/flashes.html" %}
+      {% block auth_content %}{% endblock %}
+    </div>
+  </section>
+</div>
+{% endblock %}

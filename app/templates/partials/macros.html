@@ -1,0 +1,53 @@
+{% macro csrf() -%}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{%- endmacro %}
+
+{% macro stat(label, value, icon='bar-chart', color='primary', sub=None) -%}
+<div class="card stat-card h-100">
+  <div class="card-body d-flex align-items-center gap-3">
+    <div class="stat-icon bg-{{ color }}-subtle text-{{ color }}"><i class="bi bi-{{ icon }}"></i></div>
+    <div class="min-w-0">
+      <div class="text-muted small text-truncate">{{ label }}</div>
+      <div class="fs-4 fw-bold lh-sm">{{ value }}</div>
+      {% if sub %}<div class="small text-muted">{{ sub }}</div>{% endif %}
+    </div>
+  </div>
+</div>
+{%- endmacro %}
+
+{% macro pager(page, pages, base) -%}
+{% if pages > 1 %}
+<nav aria-label="Pagination">
+  <ul class="pagination pagination-sm justify-content-center mt-3">
+    <li class="page-item {% if page <= 1 %}disabled{% endif %}"><a class="page-link" href="{{ base }}page={{ page - 1 }}">&laquo;</a></li>
+    {% for p in range(1, pages + 1) %}
+      {% if p == 1 or p == pages or (p - page)|abs <= 2 %}
+      <li class="page-item {% if p == page %}active{% endif %}"><a class="page-link" href="{{ base }}page={{ p }}">{{ p }}</a></li>
+      {% elif (p - page)|abs == 3 %}<li class="page-item disabled"><span class="page-link">…</span></li>{% endif %}
+    {% endfor %}
+    <li class="page-item {% if page >= pages %}disabled{% endif %}"><a class="page-link" href="{{ base }}page={{ page + 1 }}">&raquo;</a></li>
+  </ul>
+</nav>
+{% endif %}
+{%- endmacro %}
+
+{% macro empty(text, icon='inbox') -%}
+<div class="text-center text-muted py-5 empty-state">
+  <i class="bi bi-{{ icon }} display-6 d-block mb-2"></i>{{ text }}
+</div>
+{%- endmacro %}
+
+{% macro pct_badge(v) -%}
+{% if v is none %}<span class="badge text-bg-secondary">—</span>
+{% else %}<span class="badge text-bg-{{ v|score_class }}">{{ '%.0f'|format(v) }}%</span>{% endif %}
+{%- endmacro %}
+
+{% macro status_badge(s) -%}
+{%- set colors = {'approved':'success','pending_review':'warning','draft':'secondary','rejected':'danger'} -%}
+<span class="badge text-bg-{{ colors.get(s, 'secondary') }}">{{ s|replace('_', ' ')|capitalize }}</span>
+{%- endmacro %}
+
+{% macro confirm_post(action, label, cls='btn-outline-danger', msg='Are you sure?', icon=None) -%}
+<form method="post" action="{{ action }}" class="d-inline" data-confirm="{{ msg }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <button class="btn btn-sm {{ cls }}" type="submit">{% if icon %}<i class="bi bi-{{ icon }}"></i> {% endif %}{{ label }}</button>
+</form>
+{%- endmacro %}

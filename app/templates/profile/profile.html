@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block title %}My Profile{% endblock %}
+{% block page_title %}My Profile{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-4">
+    <div class="card text-center">
+      <div class="card-body p-4">
+        <div class="avatar avatar-xl mx-auto mb-3">{{ current_user.initials }}</div>
+        <h2 class="h5 fw-bold mb-0">{{ current_user.full_name }}</h2>
+        <div class="text-muted small mb-2">{{ current_user.email }}</div>
+        <span class="badge text-bg-primary">{{ current_user.role|capitalize }}</span>
+        {% if current_user.role == 'student' %}<span class="badge text-bg-light border">{{ current_user.major_label }}</span>{% endif %}
+        {% if level %}
+        <div class="mt-4 text-start">
+          <div class="d-flex justify-content-between small"><span class="fw-semibold">Level {{ level.level }}</span><span>{{ points }} pts</span></div>
+          <div class="progress mt-1" role="progressbar" aria-label="Level progress" aria-valuenow="{{ level.progress_pct }}" aria-valuemin="0" aria-valuemax="100">
+            <div class="progress-bar" style="width: {{ level.progress_pct }}%"></div>
+          </div>
+          <div class="small text-muted mt-1">{{ level.to_next }} pts to level {{ level.level + 1 }}</div>
+        </div>
+        {% endif %}
+      </div>
+      <ul class="list-group list-group-flush text-start small">
+        <li class="list-group-item d-flex justify-content-between"><span class="text-muted">Member since</span><span>{{ current_user.created_at|dt('%b %d, %Y') }}</span></li>
+        <li class="list-group-item d-flex justify-content-between"><span class="text-muted">Last sign-in</span><span>{{ current_user.last_login_at|ago }}</span></li>
+        <li class="list-group-item d-flex justify-content-between"><span class="text-muted">Two-factor auth</span>
+          <span>{% if current_user.totp_enabled %}<span class="text-success"><i class="bi bi-shield-check"></i> On</span>{% else %}<span class="text-muted">Off</span>{% endif %}</span></li>
+      </ul>
+    </div>
+    {% if current_user.role == 'student' %}
+    <div class="card mt-4">
+      <div class="card-header fw-semibold"><i class="bi bi-award me-1"></i> Badges</div>
+      <div class="card-body">
+        {% if badges %}
+        <div class="d-flex flex-wrap gap-2">
+          {% for ub in badges %}
+          <span class="badge-chip bg-{{ ub.badge.color }}-subtle text-{{ ub.badge.color }}-emphasis" title="{{ ub.badge.description }} — earned {{ ub.awarded_at|dt('%b %d, %Y') }}">
+            <i class="bi bi-{{ ub.badge.icon }}"></i> {{ ub.badge.name }}</span>
+          {% endfor %}
+        </div>
+        {% else %}<p class="text-muted small mb-0">No badges yet. Complete quizzes to earn your first one!</p>{% endif %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+  <div class="col-lg-8">
+    <div class="card mb-4">
+      <div class="card-header fw-semibold">Personal information</div>
+      <div class="card-body">
+        <form method="post" action="/profile">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label for="full_name" class="form-label">Full name</label>
+              <input class="form-control" id="full_name" name="full_name" value="{{ current_user.full_name }}" maxlength="150" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="email_ro">Email</label>
+              <input class="form-control" id="email_ro" value="{{ current_user.email }}" disabled>
+            </div>
+            <div class="col-md-6">
+              <label for="major" class="form-label">Program / Major</label>
+              <select class="form-select" id="major" name="major" {% if current_user.role == 'student' %}required{% endif %}>
+                <option value="">{% if current_user.role == 'student' %}Choose…{% else %}Not applicable{% endif %}</option>
+                {% for code, label in majors.items() %}<option value="{{ code }}" {% if current_user.major == code %}selected{% endif %}>{{ label }}</option>{% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label for="student_no" class="form-label">{% if current_user.role == 'student' %}Student no.{% else %}Employee no.{% endif %}</label>
+              <input class="form-control" id="student_no" name="student_no" value="{{ current_user.student_no or '' }}" maxlength="40">
+            </div>
+            <div class="col-12">
+              <label for="bio" class="form-label">About me</label>
+              <textarea class="form-control" id="bio" name="bio" rows="3" maxlength="1000">{{ current_user.bio or '' }}</textarea>
+            </div>
+          </div>
+          <button class="btn btn-primary mt-3" type="submit">Save changes</button>
+        </form>
+      </div>
+    </div>
+    <div class="card mb-4">
+      <div class="card-header fw-semibold">Change password</div>
+      <div class="card-body">
+        {% if pw_errors %}<div class="alert alert-danger"><ul class="mb-0 ps-3">{% for e in pw_errors %}<li>{{ e }}</li>{% endfor %}</ul></div>{% endif %}
+        <form method="post" action="/profile/password" class="row g-3">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          {% if current_user.password_hash %}
+          <div class="col-md-4">
+            <label for="current_password" class="form-label">Current password</label>
+            <input type="password" class="form-control" id="current_password" name="current_password" autocomplete="current-password" required>
+          </div>
+          {% endif %}
+          <div class="col-md-4">
+            <label for="new_password" class="form-label">New password</label>
+            <input type="password" class="form-control" id="new_password" name="new_password" autocomplete="new-password" required>
+          </div>
+          <div class="col-md-4">
+            <label for="confirm_password" class="form-label">Confirm</label>
+            <input type="password" class="form-control" id="confirm_password" name="confirm_password" autocomplete="new-password" required>
+          </div>
+          <div class="col-12"><button class="btn btn-outline-primary" type="submit">Update password</button></div>
+        </form>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header fw-semibold">Two-factor authentication</div>
+      <div class="card-body">
+        {% if current_user.totp_enabled %}
+          <p class="mb-3"><i class="bi bi-shield-check text-success"></i> Enabled with an authenticator app.</p>
+          <a href="/2fa/setup" class="btn btn-outline-secondary btn-sm">Re-link authenticator</a>
+          {% if not current_user.is_staff %}
+          <form method="post" action="/profile/2fa/disable" class="row g-2 mt-2 align-items-end">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <div class="col-auto"><label for="code" class="form-label small">Code to disable</label>
+              <input class="form-control form-control-sm" id="code" name="code" inputmode="numeric" maxlength="7" required></div>
+            <div class="col-auto"><button class="btn btn-outline-danger btn-sm" type="submit">Disable 2FA</button></div>
+          </form>
+          {% endif %}
+        {% else %}
+          <p class="text-muted">Protect your account with a code from an authenticator app.</p>
+          <a href="/2fa/setup" class="btn btn-primary btn-sm"><i class="bi bi-shield-lock"></i> Set up 2FA</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

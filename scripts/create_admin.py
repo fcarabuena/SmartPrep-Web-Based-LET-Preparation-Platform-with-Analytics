@@ -1,0 +1,59 @@
+"""Create (or promote) an admin account.
+
+Usage (Windows):
+    .venv\\Scripts\\python scripts\\create_admin.py --email admin@example.com --name "Site Admin"
+You will be prompted for a password unless --password is given.
+The admin must set up an authenticator app (TOTP) at first sign-in.
+"""
+import argparse
+import getpass
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from sqlalchemy import func, select  # noqa: E402
+
+from app.db import SessionLocal  # noqa: E402
+from app.models import User  # noqa: E402
+from app.security import hash_password, password_problems  # noqa: E402
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Create or promote a Smart Prep admin user")
+    parser.add_argument("--email", required=True)
+    parser.add_argument("--name", default="Administrator")
+    parser.add_argument("--password", help="omit to be prompted")
+    args = parser.parse_args()
+
+    password = args.password or getpass.getpass("Password: ")
+    problems = password_problems(password)
+    if problems:
+        print("\n".join(problems))
+        return 1
+
+    db = SessionLocal()
+    try:
+        email = args.email.strip().lower()
+        user = db.scalar(select(User).where(func.lower(User.email) == email))
+        if user:
+            user.role = "admin"
+            user.password_hash = hash_password(password)
+            user.is_active = True
+            user.email_verified = True
+            user.session_version += 1
+            action = "promoted/updated"
+        else:
+            user = User(email=email, full_name=args.name, role="admin", password_hash=hash_password(password),
+                        is_active=True, email_verified=True)
+            db.add(user)
+            action = "created"
+        db.commit()
+        print(f"Admin {email} {action}. Sign in at /login and set up 2FA with an authenticator app.")
+        return 0
+    finally:
+        db.close()
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

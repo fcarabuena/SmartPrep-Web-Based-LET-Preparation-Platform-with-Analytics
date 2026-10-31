@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import stat %}
+{% block title %}Faculty Dashboard{% endblock %}
+{% block page_title %}Faculty Dashboard{% endblock %}
+{% block content %}
+<div class="welcome-banner mb-4">
+  <div>
+    <h1 class="h3 fw-bold mb-1">Welcome, {{ current_user.full_name }}</h1>
+    <p class="mb-0 opacity-75">Manage content, administer assessments and monitor your reviewees.</p>
+  </div>
+</div>
+<div class="row g-3">
+  <div class="col-6 col-xl-3">{{ stat('Average score', '—', 'percent', 'primary') }}</div>
+  <div class="col-6 col-xl-3">{{ stat('Pass rate', '—', 'check2-circle', 'success') }}</div>
+  <div class="col-6 col-xl-3">{{ stat('Participation', '—', 'people', 'info') }}</div>
+  <div class="col-6 col-xl-3">{{ stat('At-risk students', '—', 'exclamation-triangle', 'danger') }}</div>
+</div>
+{% endblock %}

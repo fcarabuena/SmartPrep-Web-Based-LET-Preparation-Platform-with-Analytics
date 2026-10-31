@@ -1,0 +1,42 @@
+{% extends "auth/auth_base.html" %}
+{% block title %}Sign in{% endblock %}
+{% block auth_content %}
+<h2 class="h4 fw-bold mb-1">Welcome back</h2>
+<p class="text-muted mb-4">Sign in to continue your LET review.</p>
+{% if error %}<div class="alert alert-danger" role="alert">{{ error }}</div>{% endif %}
+<form method="post" action="/login" novalidate>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <input type="hidden" name="next" value="{{ next }}">
+  <div class="mb-3">
+    <label for="email" class="form-label">Email</label>
+    <input type="email" class="form-control form-control-lg" id="email" name="email" value="{{ email }}" autocomplete="email" required autofocus>
+  </div>
+  <div class="mb-2">
+    <label for="password" class="form-label">Password</label>
+    <div class="input-group">
+      <input type="password" class="form-control form-control-lg" id="password" name="password" autocomplete="current-password" required>
+      <button class="btn btn-outline-secondary" type="button" data-toggle-password="password" aria-label="Show password"><i class="bi bi-eye"></i></button>
+    </div>
+  </div>
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="form-check">
+      <input class="form-check-input" type="checkbox" value="true" id="remember" name="remember">
+      <label class="form-check-label" for="remember">Keep me signed in</label>
+    </div>
+    <a href="/forgot" class="small">Forgot password?</a>
+  </div>
+  <button type="submit" class="btn btn-primary btn-lg w-100">Sign in</button>
+</form>
+{% if settings.google_enabled %}
+<div class="divider-text my-3"><span>or</span></div>
+<a href="/auth/google" class="btn btn-outline-dark btn-lg w-100"><i class="bi bi-google me-2"></i>Continue with Google</a>
+{% endif %}
+{% if show_resend %}
+<form method="post" action="/resend-verification" class="mt-3 text-center">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <input type="hidden" name="email" value="{{ email }}">
+  <button class="btn btn-link btn-sm" type="submit">Resend verification email</button>
+</form>
+{% endif %}
+<p class="text-center mt-4 mb-0">New reviewee? <a href="/register" class="fw-semibold">Create an account</a></p>
+{% endblock %}

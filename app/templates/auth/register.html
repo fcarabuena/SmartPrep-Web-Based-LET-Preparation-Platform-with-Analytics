@@ -1,0 +1,45 @@
+{% extends "auth/auth_base.html" %}
+{% block title %}Create account{% endblock %}
+{% block auth_content %}
+<h2 class="h4 fw-bold mb-1">Create your account</h2>
+<p class="text-muted mb-4">For LET reviewees. Faculty accounts are created by the administrator.</p>
+<form method="post" action="/register" novalidate>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <div class="mb-3">
+    <label for="full_name" class="form-label">Full name</label>
+    <input class="form-control" id="full_name" name="full_name" value="{{ form.full_name or '' }}" maxlength="150" autocomplete="name" required>
+  </div>
+  <div class="mb-3">
+    <label for="email" class="form-label">Email</label>
+    <input type="email" class="form-control" id="email" name="email" value="{{ form.email or '' }}" autocomplete="email" required>
+  </div>
+  <div class="row g-3 mb-3">
+    <div class="col-sm-7">
+      <label for="major" class="form-label">Program / Major</label>
+      <select class="form-select" id="major" name="major" required>
+        <option value="">Choose…</option>
+        {% for code, label in majors.items() %}<option value="{{ code }}" {% if form.major == code %}selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-sm-5">
+      <label for="student_no" class="form-label">Student no. <span class="text-muted small">(optional)</span></label>
+      <input class="form-control" id="student_no" name="student_no" value="{{ form.student_no or '' }}" maxlength="40">
+    </div>
+  </div>
+  <div class="mb-3">
+    <label for="password" class="form-label">Password</label>
+    <input type="password" class="form-control" id="password" name="password" autocomplete="new-password" minlength="8" required aria-describedby="pwHelp">
+    <div id="pwHelp" class="form-text">At least 8 characters with letters and numbers.</div>
+  </div>
+  <div class="mb-4">
+    <label for="confirm_password" class="form-label">Confirm password</label>
+    <input type="password" class="form-control" id="confirm_password" name="confirm_password" autocomplete="new-password" required>
+  </div>
+  <button type="submit" class="btn btn-primary btn-lg w-100">Create account</button>
+</form>
+{% if settings.google_enabled %}
+<div class="divider-text my-3"><span>or</span></div>
+<a href="/auth/google" class="btn btn-outline-dark w-100"><i class="bi bi-google me-2"></i>Sign up with Google</a>
+{% endif %}
+<p class="text-center mt-4 mb-0">Already have an account? <a href="/login" class="fw-semibold">Sign in</a></p>
+{% endblock %}

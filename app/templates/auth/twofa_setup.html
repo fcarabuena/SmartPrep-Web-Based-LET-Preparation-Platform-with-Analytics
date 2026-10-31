@@ -1,0 +1,25 @@
+{% extends "auth/auth_base.html" if pending else "base.html" %}
+{% block title %}Set up two-factor authentication{% endblock %}
+{% block page_title %}Two-factor authentication{% endblock %}
+{% macro body() %}
+<h2 class="h4 fw-bold mb-1">Set up two-factor authentication</h2>
+<p class="text-muted">{% if user.is_staff %}Admin and faculty accounts must use an authenticator app.{% else %}Add an extra layer of security to your account.{% endif %}</p>
+<ol class="small ps-3">
+  <li>Install Google Authenticator, Microsoft Authenticator or Authy on your phone.</li>
+  <li>Scan the QR code (or enter the key manually).</li>
+  <li>Enter the 6-digit code shown in the app.</li>
+</ol>
+<div class="text-center my-3">
+  <img src="{{ qr }}" alt="QR code for authenticator app" width="200" height="200" class="border rounded p-2 bg-white">
+  <div class="small text-muted mt-2">Key: <code class="user-select-all">{{ secret }}</code></div>
+</div>
+{% if error %}<div class="alert alert-danger" role="alert">{{ error }}</div>{% endif %}
+<form method="post" action="/2fa/setup">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <label for="code" class="form-label">6-digit code</label>
+  <input class="form-control form-control-lg text-center otp-input mb-3" id="code" name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="7" required autofocus>
+  <button class="btn btn-primary btn-lg w-100" type="submit">Verify &amp; enable</button>
+</form>
+{% endmacro %}
+{% block auth_content %}{{ body() }}{% endblock %}
+{% block content %}<div class="row justify-content-center"><div class="col-md-7 col-lg-5"><div class="card"><div class="card-body p-4">{{ body() }}</div></div></div></div>{% endblock %}

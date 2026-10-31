@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import pager, confirm_post, empty %}
+{% block title %}Users{% endblock %}
+{% block page_title %}User Management{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h1 class="h4 fw-bold mb-0">Users <span class="text-muted fs-6">({{ total }})</span></h1>
+  <a href="/admin/users/new" class="btn btn-primary"><i class="bi bi-person-plus"></i> New user</a>
+</div>
+<form class="card card-body mb-3" method="get">
+  <div class="row g-2">
+    <div class="col-md-5"><label class="visually-hidden" for="q">Search</label>
+      <input class="form-control" id="q" name="q" value="{{ q }}" placeholder="Search name or email"></div>
+    <div class="col-6 col-md-3"><label class="visually-hidden" for="role">Role</label>
+      <select class="form-select" id="role" name="role"><option value="">All roles</option>
+        {% for r in roles %}<option value="{{ r }}" {% if role == r %}selected{% endif %}>{{ r|capitalize }}</option>{% endfor %}</select></div>
+    <div class="col-6 col-md-2"><label class="visually-hidden" for="status">Status</label>
+      <select class="form-select" id="status" name="status"><option value="">Any status</option>
+        {% for s in ['active', 'inactive', 'unverified'] %}<option value="{{ s }}" {% if status == s %}selected{% endif %}>{{ s|capitalize }}</option>{% endfor %}</select></div>
+    <div class="col-md-2 d-grid"><button class="btn btn-outline-primary" type="submit"><i class="bi bi-search"></i> Filter</button></div>
+  </div>
+</form>
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light"><tr><th>Name</th><th>Role</th><th class="d-none d-md-table-cell">Major</th><th>Status</th><th class="d-none d-lg-table-cell">Last seen</th><th class="text-end">Actions</th></tr></thead>
+      <tbody>
+      {% for u in users %}
+        <tr>
+          <td><div class="fw-semibold">{{ u.full_name }}</div><div class="small text-muted">{{ u.email }}</div></td>
+          <td><span class="badge text-bg-{{ {'admin':'danger','faculty':'success','student':'primary'}[u.role] }}">{{ u.role|capitalize }}</span></td>
+          <td class="d-none d-md-table-cell small">{{ u.major_label }}</td>
+          <td>
+            {% if u.is_active %}<span class="badge text-bg-success-subtle text-success-emphasis">Active</span>{% else %}<span class="badge text-bg-secondary">Inactive</span>{% endif %}
+            {% if not u.email_verified %}<span class="badge text-bg-warning">Unverified</span>{% endif %}
+            {% if u.locked_until and u.locked_until > now() %}<span class="badge text-bg-danger">Locked</span>{% endif %}
+            {% if u.totp_enabled %}<i class="bi bi-shield-check text-success" title="2FA enabled"></i>{% endif %}
+          </td>
+          <td class="d-none d-lg-table-cell small text-muted">{{ u.last_seen_at|ago }}</td>
+          <td class="text-end text-nowrap">
+            <a class="btn btn-sm btn-outline-primary" href="/admin/users/{{ u.id }}/edit" aria-label="Edit {{ u.full_name }}"><i class="bi bi-pencil"></i></a>
+            <div class="dropdown d-inline">
+              <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="dropdown" aria-label="More actions"><i class="bi bi-three-dots"></i></button>
+              <div class="dropdown-menu dropdown-menu-end p-2" style="min-width: 12rem">
+                <div class="d-grid gap-1">
+                {{ confirm_post('/admin/users/%d/toggle'|format(u.id), 'Deactivate' if u.is_active else 'Activate', 'btn-outline-warning', 'Change account status?') }}
+                {% if u.locked_until %}{{ confirm_post('/admin/users/%d/unlock'|format(u.id), 'Unlock', 'btn-outline-secondary', 'Unlock this account?') }}{% endif %}
+                {% if u.totp_enabled %}{{ confirm_post('/admin/users/%d/reset-2fa'|format(u.id), 'Reset 2FA', 'btn-outline-secondary', 'Reset two-factor authentication for this user?') }}{% endif %}
+                {{ confirm_post('/admin/users/%d/delete'|format(u.id), 'Delete', 'btn-outline-danger', 'Permanently delete this user and all their data?') }}
+                </div>
+              </div>
+            </div>
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="6">{{ empty('No users match your filters.', 'people') }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{{ pager(page, pages, '?q=%s&role=%s&status=%s&'|format(q|urlencode, role, status)) }}
+{% endblock %}

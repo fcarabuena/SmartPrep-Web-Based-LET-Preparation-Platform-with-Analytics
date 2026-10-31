@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}{{ status }}{% endblock %}
+{% macro body() %}
+{% set headings = {403: 'Access denied', 404: 'Page not found', 500: 'Something went wrong on our side'} %}
+{% set messages = {403: "You don't have permission to view this page.", 404: "The page you are looking for doesn't exist or was moved.", 500: 'The error has been logged. Please try again in a moment.'} %}
+<div class="text-center py-5 error-page">
+  <div class="display-1 fw-bold text-primary">{{ status }}</div>
+  <h1 class="h3 fw-bold">{{ headings.get(status, 'Request failed') }}</h1>
+  <p class="text-muted mx-auto" style="max-width: 32rem">{{ detail or messages.get(status, 'The request could not be completed.') }}</p>
+  <a href="/" class="btn btn-primary mt-2"><i class="bi bi-house"></i> Go to dashboard</a>
+</div>
+{% endmacro %}
+{% block content %}{{ body() }}{% endblock %}
+{% block public_content %}{{ body() }}{% endblock %}

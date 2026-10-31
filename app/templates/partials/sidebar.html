@@ -1,0 +1,84 @@
+{%- macro item(route, href, icon, label, key=None) -%}
+  {%- if has_route(request, route) -%}
+  <li class="nav-item">
+    <a class="nav-link {% if active == (key or route) %}active{% endif %}" href="{{ href }}"
+       {% if active == (key or route) %}aria-current="page"{% endif %}>
+      <i class="bi bi-{{ icon }}"></i><span>{{ label }}</span>
+    </a>
+  </li>
+  {%- endif -%}
+{%- endmacro -%}
+<nav class="sidebar-nav">
+  <ul class="nav flex-column">
+    {{ item('dashboard', '/dashboard', 'speedometer2', 'Dashboard') }}
+  {% if current_user.role == 'student' %}
+    {{ item('examinations', '/examinations', 'journal-check', 'Examinations') }}
+    {% if has_route(request, 'quizzes') %}
+    <li class="nav-item">
+      <a class="nav-link {% if active == 'quizzes' %}active{% endif %}" data-bs-toggle="collapse" href="#nav-quizzes"
+         role="button" aria-expanded="{{ 'true' if active == 'quizzes' else 'false' }}" aria-controls="nav-quizzes">
+        <i class="bi bi-ui-checks"></i><span>Quizzes</span><i class="bi bi-chevron-down ms-auto small"></i>
+      </a>
+      <div class="collapse {% if active == 'quizzes' %}show{% endif %}" id="nav-quizzes">
+        <ul class="nav flex-column sub-nav">
+          <li><a class="nav-link" href="/quizzes">All quizzes</a></li>
+          {% for cat in nav_categories or [] %}
+          <li>
+            <a class="nav-link" data-bs-toggle="collapse" href="#nav-cat-{{ cat.id }}" role="button" aria-expanded="false">
+              {{ cat.name }} <i class="bi bi-chevron-down ms-auto small"></i>
+            </a>
+            <div class="collapse" id="nav-cat-{{ cat.id }}">
+              <ul class="nav flex-column sub-sub-nav">
+                <li><a class="nav-link" href="/quizzes?category={{ cat.id }}">All {{ cat.short }}</a></li>
+                {% for c in cat.courses %}<li><a class="nav-link" href="/quizzes?course={{ c.id }}">{{ c.name }}</a></li>{% endfor %}
+              </ul>
+            </div>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </li>
+    {% endif %}
+    {{ item('materials', '/materials', 'collection-play', 'Learning Materials') }}
+    {{ item('grades', '/grades', 'card-checklist', 'Grades') }}
+    {{ item('gamification', '/gamification', 'trophy', 'Gamification') }}
+    {{ item('progress', '/progress', 'graph-up-arrow', 'Progress') }}
+    {{ item('study_plan', '/study-plan', 'signpost-split', 'Study Plan') }}
+    {{ item('goals', '/goals', 'bullseye', 'Goals') }}
+  {% else %}
+    <li class="nav-section">Content</li>
+    {{ item('content_structure', '/content/categories', 'diagram-3', 'Categories & Topics') }}
+    {{ item('question_bank', '/questions', 'patch-question', 'Question Bank') }}
+    {{ item('review_queue', '/questions/review', 'clipboard-check', 'Review Queue') }}
+    {{ item('question_import', '/questions/import', 'file-earmark-spreadsheet', 'Import Questions') }}
+    {{ item('resources_admin', '/resources', 'collection', 'Resources') }}
+    {{ item('scrape_jobs', '/scrape', 'globe2', 'Web Scraping') }}
+    {% if settings.gemini_enabled %}{{ item('ai_generate', '/ai/generate', 'stars', 'AI Generator') }}{% endif %}
+    <li class="nav-section">Assessments</li>
+    {{ item('assessments_admin', '/assessments', 'journal-text', 'Assessments') }}
+    {{ item('submissions', '/submissions', 'inboxes', 'Submissions') }}
+    {{ item('leaderboards', '/leaderboards', 'bar-chart-steps', 'Leaderboards') }}
+    {{ item('badges_admin', '/badges', 'award', 'Badges') }}
+    <li class="nav-section">Monitoring</li>
+    {{ item('faculty_analytics', '/analytics/class', 'graph-up', 'Class Analytics') }}
+    {{ item('at_risk', '/analytics/at-risk', 'exclamation-triangle', 'At-Risk Students') }}
+    {{ item('item_analysis', '/analytics/items', 'bar-chart', 'Item Analysis') }}
+    {{ item('reports', '/reports', 'file-earmark-bar-graph', 'Reports') }}
+  {% endif %}
+    <li class="nav-section">Community</li>
+    {{ item('calendar', '/calendar', 'calendar3', 'Calendar') }}
+    {{ item('inbox', '/inbox', 'envelope', 'Inbox') }}
+    {{ item('forum', '/forum', 'chat-square-text', 'Forum') }}
+    {% if current_user.role != 'student' %}
+    {{ item('announcements', '/announcements', 'megaphone', 'Announcements') }}
+    {% endif %}
+  {% if current_user.role == 'admin' %}
+    <li class="nav-section">Administration</li>
+    {{ item('admin_users', '/admin/users', 'people', 'Users') }}
+    {{ item('admin_analytics', '/admin/analytics', 'activity', 'System Analytics') }}
+    {{ item('admin_settings', '/admin/settings', 'gear', 'Settings') }}
+    {{ item('admin_health', '/admin/health', 'heart-pulse', 'System Health') }}
+    {{ item('admin_backups', '/admin/backups', 'database-down', 'Backups') }}
+  {% endif %}
+  </ul>
+</nav>

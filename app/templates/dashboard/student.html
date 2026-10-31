@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import stat %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block content %}
+<div class="welcome-banner mb-4">
+  <div>
+    <h1 class="h3 fw-bold mb-1">Hello, {{ current_user.full_name.split(' ')[0] }}! 👋</h1>
+    <p class="mb-0 opacity-75">{{ current_user.major_label }} · Keep going — every quiz brings you closer to passing the LET.</p>
+  </div>
+</div>
+<div class="row g-3 mb-4">
+  <div class="col-6 col-xl-3">{{ stat('LET Readiness', '—', 'speedometer', 'primary', 'Take a quiz to start') }}</div>
+  <div class="col-6 col-xl-3">{{ stat('Quizzes completed', 0, 'check2-square', 'success') }}</div>
+  <div class="col-6 col-xl-3">{{ stat('Points', 0, 'star', 'warning') }}</div>
+  <div class="col-6 col-xl-3">{{ stat('Badges', 0, 'award', 'info') }}</div>
+</div>
+<div class="card">
+  <div class="card-body text-muted">Your personalized dashboard will show readiness, upcoming deadlines and recommendations as you use Smart Prep.</div>
+</div>
+{% endblock %}
