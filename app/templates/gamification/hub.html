@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import stat, empty with context %}
+{% block title %}Gamification{% endblock %}
+{% block page_title %}Gamification{% endblock %}
+{% block content %}
+<div class="row g-3 mb-4">
+  <div class="col-6 col-xl-3">{{ stat('Total points', points, 'star-fill', 'warning') }}</div>
+  <div class="col-6 col-xl-3">{{ stat('Level', level.level, 'bar-chart-steps', 'primary', level.to_next ~ ' pts to next level') }}</div>
+  <div class="col-6 col-xl-3">{{ stat('Daily streak', streak ~ ' day' ~ ('s' if streak != 1 else ''), 'fire', 'danger') }}</div>
+  <div class="col-6 col-xl-3">{{ stat('My rank', ('#' ~ rank ~ ' of ' ~ of) if rank else '—', 'trophy', 'success') }}</div>
+</div>
+<div class="card mb-4"><div class="card-body">
+  <div class="d-flex justify-content-between small mb-1"><span class="fw-semibold">Level {{ level.level }}</span><span>{{ points }} / {{ level.next_floor }} pts</span></div>
+  <div class="progress" style="height: 12px" role="progressbar" aria-label="Progress to next level" aria-valuenow="{{ level.progress_pct }}" aria-valuemin="0" aria-valuemax="100"><div class="progress-bar progress-bar-striped" style="width: {{ level.progress_pct }}%"></div></div>
+</div></div>
+<div class="row g-4">
+  <div class="col-xl-8">
+    <div class="card mb-4">
+      <div class="card-header d-flex justify-content-between align-items-center"><span class="fw-semibold"><i class="bi bi-controller"></i> Games &amp; Quiz Bees</span>
+        <form method="post" action="/games/quick-quiz-bee" class="m-0"><input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <button class="btn btn-sm btn-warning" type="submit"><i class="bi bi-lightning-fill"></i> Quick Quiz Bee (5 min)</button></form>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          {% for item in games %}<div class="col-md-6">{% include "exams/_card.html" %}</div>
+          {% else %}<div class="col-12 text-muted small">No faculty games right now. Try a Quick Quiz Bee: 15 random questions across all subjects against the clock!</div>{% endfor %}
+        </div>
+      </div>
+    </div>
+    <div class="card mb-4">
+      <div class="card-header fw-semibold"><i class="bi bi-award"></i> Badges</div>
+      <div class="card-body">
+        <div class="row g-3">
+          {% for ub in earned %}
+          <div class="col-6 col-md-4 col-xxl-3"><div class="border rounded-3 p-3 text-center h-100 bg-{{ ub.badge.color }}-subtle">
+            <i class="bi bi-{{ ub.badge.icon }} fs-2 text-{{ ub.badge.color }}"></i>
+            <div class="fw-semibold small mt-1">{{ ub.badge.name }}</div>
+            <div class="small text-muted">{{ ub.awarded_at|dt('%b %d, %Y') }}</div></div></div>
+          {% endfor %}
+          {% for b in locked %}
+          <div class="col-6 col-md-4 col-xxl-3"><div class="border rounded-3 p-3 text-center h-100 opacity-50" title="{{ b.description }}">
+            <i class="bi bi-lock fs-2"></i>
+            <div class="fw-semibold small mt-1">{{ b.name }}</div>
+            <div class="small text-muted">{{ b.description }}</div></div></div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-xl-4">
+    <div class="card mb-4">
+      <div class="card-header d-flex justify-content-between"><span class="fw-semibold"><i class="bi bi-trophy"></i> Top reviewees</span><a class="small" href="/leaderboards">Full leaderboards</a></div>
+      {% if public %}
+      <ul class="list-group list-group-flush">
+        {% for r in top %}<li class="list-group-item d-flex justify-content-between {% if r.user_id == current_user.id %}fw-bold{% endif %}"><span>{{ ['🥇','🥈','🥉'][r.rank - 1] if r.rank <= 3 else '#' ~ r.rank }} {{ r.name }}</span><span>{{ r.label }}</span></li>
+        {% else %}<li class="list-group-item text-muted small">No points yet — be the first!</li>{% endfor %}
+      </ul>
+      {% else %}<div class="card-body small text-muted">Leaderboards are currently hidden by your faculty.</div>{% endif %}
+    </div>
+    <div class="card">
+      <div class="card-header fw-semibold"><i class="bi bi-clock-history"></i> Recent points</div>
+      <ul class="list-group list-group-flush small">
+        {% for p in history %}<li class="list-group-item d-flex justify-content-between"><span>{{ reasons.get(p.reason, p.reason) }}{% if p.note %} <span class="text-muted">· {{ p.note }}</span>{% endif %}</span><span class="text-success fw-semibold">+{{ p.points }}</span></li>
+        {% else %}<li class="list-group-item text-muted">Complete a quiz to start earning points.</li>{% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}

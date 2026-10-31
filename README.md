@@ -15,7 +15,7 @@ psycopg 3 · PostgreSQL (Neon) / SQLite (local) · pytest
 | 1 | Foundation: models, migrations, auth (register/verify/login/reset/2FA/Google), roles, layout, admin users | ✅ |
 | 2 | Content: categories/courses/topics, question bank, review queue, import, resources | ✅ |
 | 3 | Assessments: exams/quizzes, timer, results, grades | ✅ |
-| 4 | Recommendations, adaptive practice, study plan, gamification | ⏳ |
+| 4 | Recommendations, adaptive practice, study plan, gamification | ✅ |
 | 5 | Analytics & reports | ⏳ |
 | 6 | Notifications, inbox, calendar, goals, forum | ⏳ |
 | 7 | Web scraping & optional Gemini generation | ⏳ |
@@ -80,6 +80,23 @@ Tests use an in-memory SQLite database and never touch the network.
 - **Results:** score, pass/fail, chosen vs correct answer with rationalization for every item, Retake.
 - **Grades** (`/grades`): Passed / Failed / Missing / Not attempted with category/course filters, print stylesheet
   and PDF export. Faculty see every attempt under `/submissions`.
+
+### Adaptive learning & gamification (Phase 4)
+- **Recommendations** (results page): resources per topic proportional to wrong answers (1 wrong → 1, 3 wrong → 3,
+  capped in settings), topic practice first, then videos/articles; level by mastery (<75% foundational, 75–84%
+  standard, ≥85% advanced and fewer items).
+- **Regenerate Questions:** adaptive set for the same scope; topic weight = 1 − mastery, difficulty mix by mastery,
+  avoids questions seen in the last 7 days. Adaptive sets never use up graded attempts.
+- **Study Plan** (`/study-plan`): weakest topics first with mastery bars, leveled resources and "Start practice".
+- **Points ledger** (correct answers, completion, pass + bonus, perfect score, improvement, quiz series, recommended
+  resource views with a daily cap, daily streak) and **levels** (level n starts at step·n(n−1)/2 points).
+- **Badges** are data-driven rules (accuracy, improvement, category mastery, perfect, streak, first quiz, points,
+  quizzes completed, manual). Defaults: Accuracy Ace, Persistence Pro, Master of Categories, Perfect Score, Streak 7,
+  First Steps. Staff add badges and award manual ones at `/badges`; students get a notification.
+- **Leaderboards** (`/leaderboards`): overall (points), by category, by course and by game/assessment. Ties go to
+  first-attempt passers, then less time. Faculty can hide leaderboards from students.
+- **Games:** faculty-created timed quiz games and quiz bees, plus an instant "Quick Quiz Bee" (15 random questions
+  across all subjects, 5 minutes).
 
 ## Configuration
 

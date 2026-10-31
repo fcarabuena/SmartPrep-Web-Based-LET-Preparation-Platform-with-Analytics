@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import empty with context %}
+{% block title %}Leaderboards{% endblock %}
+{% block page_title %}Leaderboards{% endblock %}
+{% block content %}
+{% if hidden %}
+<div class="card">{{ empty('Leaderboards are currently hidden by your faculty.', 'eye-slash') }}</div>
+{% else %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h1 class="h4 fw-bold mb-0"><i class="bi bi-trophy text-warning"></i> Leaderboards</h1>
+  {% if current_user.is_staff %}
+  <form method="post" action="/leaderboards/visibility" class="d-flex align-items-center gap-2">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="public" value="{{ 'false' if public else 'true' }}">
+    <span class="small">Students {{ 'can' if public else 'cannot' }} see leaderboards.</span>
+    <button class="btn btn-sm {{ 'btn-outline-secondary' if public else 'btn-outline-success' }}" type="submit">{{ 'Hide from students' if public else 'Make public' }}</button>
+  </form>
+  {% endif %}
+</div>
+<ul class="nav nav-pills gap-1 mb-3">
+  {% for s, label in [('overall', 'Overall'), ('category', 'By category'), ('course', 'By course'), ('game', 'By game / assessment')] %}
+  <li class="nav-item"><a class="nav-link {% if scope == s %}active{% endif %}" href="/leaderboards?scope={{ s }}">{{ label }}</a></li>
+  {% endfor %}
+</ul>
+{% if scope != 'overall' %}
+<form class="mb-3" method="get" data-autosubmit>
+  <input type="hidden" name="scope" value="{{ scope }}">
+  <label class="visually-hidden" for="ref">Filter</label>
+  <select class="form-select" id="ref" name="ref" style="max-width: 420px">
+    {% set opts = {'category': categories, 'course': courses, 'game': games}[scope] %}
+    {% for o in opts %}<option value="{{ o.id }}" {% if ref == o.id %}selected{% endif %}>{{ o.title if scope == 'game' else o.name }}{% if scope == 'game' %} ({{ o.kind_label }}){% endif %}</option>{% endfor %}
+  </select>
+</form>
+{% endif %}
+<div class="card">
+  <div class="table-responsive">
+    <table class="table align-middle mb-0">
+      <thead class="table-light"><tr><th style="width: 70px">Rank</th><th>Reviewee</th><th class="d-none d-md-table-cell">Major</th><th class="text-end">{{ 'Points' if scope == 'overall' else 'Avg best score' }}</th><th class="text-end d-none d-sm-table-cell" title="Assessments passed on the first attempt (tie-breaker)">1st-try passes</th></tr></thead>
+      <tbody>
+      {% for r in rows %}
+      <tr class="{{ 'leader-%d'|format(r.rank) if r.rank <= 3 }} {% if r.user_id == current_user.id %}fw-bold{% endif %}">
+        <td class="fs-5">{{ ['🥇','🥈','🥉'][r.rank - 1] if r.rank <= 3 else r.rank }}</td>
+        <td>{{ r.name }}{% if r.user_id == current_user.id %} <span class="badge text-bg-primary">You</span>{% endif %}</td>
+        <td class="d-none d-md-table-cell small">{{ r.major }}</td>
+        <td class="text-end">{{ r.label }}</td>
+        <td class="text-end d-none d-sm-table-cell">{{ r.first_passes }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5">{{ empty('No results yet for this leaderboard.', 'trophy') }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+<p class="small text-muted mt-2">Ties are broken in favor of reviewees who passed on their first attempt, then by less time spent.</p>
+{% endif %}
+{% endblock %}

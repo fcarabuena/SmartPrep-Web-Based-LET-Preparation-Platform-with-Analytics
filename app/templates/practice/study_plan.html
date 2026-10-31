@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import empty, kind_icon with context %}
+{% block title %}Study Plan{% endblock %}
+{% block page_title %}Study Plan{% endblock %}
+{% block content %}
+<div class="welcome-banner mb-4">
+  <div>
+    <h1 class="h4 fw-bold mb-1"><i class="bi bi-signpost-split"></i> Your personalized study plan</h1>
+    <p class="mb-0 opacity-75">Weakest topics first. Mastery &lt;75% → foundational review and easier items; 75–84% → standard; ≥85% → advanced challenge.</p>
+  </div>
+  <form method="post" action="/practice/adaptive">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <button class="btn btn-light btn-lg" type="submit"><i class="bi bi-lightning-charge"></i> Adaptive review (15 items)</button>
+  </form>
+</div>
+{% if not answered %}
+<div class="alert alert-info"><i class="bi bi-info-circle"></i> You haven't answered any questions yet. Topics below are listed as <em>Not started</em> — take a quiz or start practice to personalize your plan.</div>
+{% endif %}
+<div class="row g-3">
+  {% for p in plan %}
+  <div class="col-xl-6">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start gap-2">
+          <div>
+            <div class="small text-muted">{{ loop.index }}. {{ p.topic.course.category.name }} › {{ p.topic.course.name }}</div>
+            <h2 class="h6 fw-bold mb-1">{{ p.topic.name }}</h2>
+          </div>
+          {% if p.mastery is none %}<span class="badge text-bg-secondary">Not started</span>
+          {% else %}<span class="badge text-bg-{{ p.mastery|score_class }} fs-6">{{ '%.0f'|format(p.mastery) }}%</span>{% endif %}
+        </div>
+        {% if p.mastery is not none %}
+        <div class="progress my-2" style="height: 6px" role="progressbar" aria-label="Mastery" aria-valuenow="{{ p.mastery|round }}" aria-valuemin="0" aria-valuemax="100">
+          <div class="progress-bar bg-{{ p.mastery|score_class }}" style="width: {{ p.mastery|round }}%"></div></div>
+        <div class="small text-muted mb-2">{{ p.correct }}/{{ p.answered }} correct · recommended level: <strong>{{ p.level }}</strong></div>
+        {% else %}<div class="small text-muted my-2">{{ p.available }} practice questions available.</div>{% endif %}
+        {% if p.resources %}
+        <ul class="list-unstyled small mb-3">
+          {% for r in p.resources %}<li class="mb-1"><i class="bi bi-{{ kind_icon(r.kind) }} text-primary"></i> <a href="/r/{{ r.id }}?rec=1" target="_blank" rel="noopener">{{ r.title }}</a> <span class="text-muted">· {{ r.level }}</span></li>{% endfor %}
+        </ul>
+        {% endif %}
+        {% if p.available %}
+        <form method="post" action="/practice/topic/{{ p.topic.id }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <button class="btn btn-sm btn-primary" type="submit"><i class="bi bi-play-fill"></i> Start practice</button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="col-12"><div class="card">{{ empty('No topics with practice questions yet.', 'signpost-split') }}</div></div>
+  {% endfor %}
+</div>
+{% endblock %}
