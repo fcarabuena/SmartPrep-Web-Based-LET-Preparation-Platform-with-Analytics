@@ -146,7 +146,11 @@ try it. **Submissions** lists every attempt with a link to the full result.
 
 ## For administrators
 Everything faculty can do, plus:
-- **Users** – create, edit, change roles, activate/deactivate, unlock, reset 2FA, delete.
+- **Users** – **Create user** (name, email, role admin/faculty/student, major for students, temporary password or
+  a generated one shown once). The new user must choose their own password at first sign-in, and admin/faculty
+  must also set up 2FA. Also edit, change roles, activate/deactivate, unlock, reset 2FA and delete.
+- **Lost your own authenticator?** Ask another admin to reset your 2FA, or run
+  `scripts\create_admin.py --email <you> --reset-2fa` against the database (see README).
 - **System Analytics** – DAU/WAU/MAU, logins and registrations per day, peak activity heatmap, session length,
   popular content, content access, question sources and approval rates.
 - **Settings** – pass thresholds, readiness weights and bands, at-risk rules, recommendation cap, gamification

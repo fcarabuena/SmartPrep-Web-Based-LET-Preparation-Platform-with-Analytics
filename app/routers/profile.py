@@ -4,7 +4,7 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
 from app.db import get_db
-from app.deps import require_any
+from app.deps import get_current_user_optional, require_any
 from app.models import MAJORS, User
 from app.security import hash_password, password_problems, verify_password, verify_totp
 from app.templating import flash, render
@@ -79,11 +79,46 @@ def change_password(
         return render(request, "profile/profile.html", {**_profile_ctx(db, user), "pw_errors": errors},
                       status_code=400)
     user.password_hash = hash_password(new_password)
+    user.must_change_password = False
     user.session_version += 1  # signs out other devices
     db.commit()
     request.session["sv"] = user.session_version
     flash(request, "Password changed. Other devices have been signed out.")
     return RedirectResponse("/profile", status_code=303)
+
+
+# ---- forced change of an admin-issued temporary password (first sign-in) ----
+
+@router.get("/account/change-password", name="force_password_change")
+def force_change_page(request: Request, user: User | None = Depends(get_current_user_optional)):
+    if user is None:
+        return RedirectResponse("/login", status_code=303)
+    if not user.must_change_password:
+        return RedirectResponse("/profile", status_code=303)
+    return render(request, "auth/change_password.html")
+
+
+@router.post("/account/change-password")
+def force_change_submit(request: Request, new_password: str = Form(""), confirm_password: str = Form(""),
+                        user: User | None = Depends(get_current_user_optional), db: Session = Depends(get_db)):
+    if user is None:
+        return RedirectResponse("/login", status_code=303)
+    if not user.must_change_password:
+        return RedirectResponse("/profile", status_code=303)
+    errors = password_problems(new_password)
+    if new_password != confirm_password:
+        errors.append("Passwords do not match.")
+    if not errors and verify_password(new_password, user.password_hash):
+        errors.append("Choose a password different from your temporary password.")
+    if errors:
+        return render(request, "auth/change_password.html", {"errors": errors}, status_code=400)
+    user.password_hash = hash_password(new_password)
+    user.must_change_password = False
+    user.session_version += 1
+    db.commit()
+    request.session["sv"] = user.session_version
+    flash(request, "Your new password is set. Welcome to Smart Prep!")
+    return RedirectResponse("/dashboard", status_code=303)
 
 
 @router.post("/profile/2fa/disable")

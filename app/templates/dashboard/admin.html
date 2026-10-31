@@ -9,7 +9,7 @@
     <p class="mb-0 opacity-75">{{ m.totals.approved }} approved of {{ m.totals.questions }} questions · {{ m.totals.resources }} resources · class average {{ ('%.0f%%'|format(c.avg_score)) if c.avg_score is not none else '—' }}</p>
   </div>
   <div class="d-flex gap-2">
-    <a href="/admin/users/new" class="btn btn-light"><i class="bi bi-person-plus"></i> Add user</a>
+    <a href="/admin/users/new" class="btn btn-light"><i class="bi bi-person-plus"></i> Create user</a>
     <a href="/reports" class="btn btn-outline-light"><i class="bi bi-file-earmark-bar-graph"></i> Reports</a>
   </div>
 </div>

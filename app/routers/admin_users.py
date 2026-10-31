@@ -82,6 +82,8 @@ def create_user(
         errors.append("Invalid role.")
     if major and major not in MAJORS:
         errors.append("Invalid major.")
+    if role == "student" and not major:
+        errors.append("Choose a major for this student.")
     temp_password = None
     if password:
         errors += password_problems(password)
@@ -89,13 +91,17 @@ def create_user(
         temp_password = secrets.token_urlsafe(9) + "7a"
     if errors:
         return render(request, "admin/user_form.html", _form_ctx(None, form, errors), status_code=400)
+    # The password set here is temporary: the user must replace it at first sign-in.
+    # Admin/faculty also set up TOTP 2FA at first sign-in (enforced by the login flow).
     user = User(full_name=form["full_name"], email=norm, role=role, major=major or None,
-                password_hash=hash_password(password or temp_password), email_verified=True)
+                password_hash=hash_password(password or temp_password), email_verified=True,
+                must_change_password=True)
     db.add(user)
     db.commit()
-    msg = f"User {user.email} created."
+    msg = f"User {user.email} created as {role}."
     if temp_password:
         msg += f" Temporary password: {temp_password} (share it securely; it will not be shown again)."
+    msg += " They must change the password" + (" and set up 2FA" if role != "student" else "") + " on first sign-in."
     flash(request, msg)
     return RedirectResponse("/admin/users", status_code=303)
 
@@ -158,6 +164,7 @@ def update_user(
     user.is_active, user.email_verified = is_active, email_verified
     if new_password:
         user.password_hash = hash_password(new_password)
+        user.must_change_password = user.id != admin.id  # an admin-set password is temporary for others
     if new_password or role_changed or not is_active:
         user.session_version += 1
     db.commit()

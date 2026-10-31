@@ -133,6 +133,13 @@ $env:DATABASE_URL = "postgresql://...neon.tech/neondb?sslmode=require"
 Remove-Item Env:DATABASE_URL
 ```
 
+**Lost the phone with your authenticator?** With `DATABASE_URL` set as above, run
+`.venv\Scripts\python scripts\create_admin.py --email you@example.com --reset-2fa`, then sign in and scan the new QR
+code. Other users' 2FA can be reset by any admin under **Users**.
+
+**Creating accounts:** admins use **Users › Create user** (name, email, role, temporary password). New users must
+replace the temporary password at first sign-in; admin and faculty also set up 2FA.
+
 Optional: add `BREVO_API_KEY` + `MAIL_FROM` (a verified Brevo sender) for email, `GOOGLE_CLIENT_ID` /
 `GOOGLE_CLIENT_SECRET` for Google sign-in (redirect URI `https://<your-app>/auth/google/callback`), and
 `GEMINI_API_KEY` for AI question generation.
@@ -252,6 +259,7 @@ Optional: add `BREVO_API_KEY` + `MAIL_FROM` (a verified Brevo sender) for email,
 | `BREVO_API_KEY`, `MAIL_FROM`, `MAIL_FROM_NAME` | no | Email via Brevo HTTP API. Without a key, emails are printed to the console and new accounts are auto-verified |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | no | "Continue with Google" button (hidden when unset) |
 | `GEMINI_API_KEY`, `GEMINI_MODEL` | no | AI question generation (hidden when unset) |
+| `SCRAPER_CONTACT` | no | Contact in the scraper's User-Agent (default `fcarabuena793@gmail.com`) |
 
 ## Project layout
 

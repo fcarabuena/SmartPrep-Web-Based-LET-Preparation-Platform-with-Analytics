@@ -17,7 +17,8 @@ from app.services.seed_content import seed_badges, seed_sample_questions
 from tests.conftest import get_csrf, login, make_user
 
 PUBLIC = {"/", "/login", "/logout", "/register", "/verify", "/resend-verification", "/forgot", "/reset",
-          "/2fa/setup", "/2fa/verify", "/auth/google", "/auth/google/callback", "/healthz", "/favicon.ico"}
+          "/2fa/setup", "/2fa/verify", "/auth/google", "/auth/google/callback", "/healthz", "/favicon.ico",
+          "/account/change-password"}  # signed-in users with a temporary password; redirects others itself
 
 
 def required_roles(route: APIRoute) -> set[str] | None:

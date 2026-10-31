@@ -19,10 +19,15 @@ from urllib.robotparser import RobotFileParser
 import httpx
 from bs4 import BeautifulSoup
 
+from app.config import settings
 from app.db import SessionLocal, utcnow
 from app.models import ScrapeJob
 
-USER_AGENT = "SmartPrepBot/1.0 (+LET review platform; RSU Cajidiocan; educational use)"
+PROJECT_URL = "https://github.com/fcarabuena/SmartPrep-Web-Based-LET-Preparation-Platform-with-Analytics"
+USER_AGENT = (
+    f"SmartPrepBot/1.0 (+{settings.BASE_URL.rstrip('/') or PROJECT_URL}; {settings.SCRAPER_CONTACT}) "
+    "educational LET review, RSU Cajidiocan"
+)
 TIMEOUT = 10.0
 MAX_PAGES = 20
 MAX_BYTES = 2 * 1024 * 1024

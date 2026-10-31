@@ -19,7 +19,7 @@
               <select class="form-select" id="role" name="role">
                 {% for r in roles %}<option value="{{ r }}" {% if (form.role or 'student') == r %}selected{% endif %}>{{ r|capitalize }}</option>{% endfor %}
               </select></div>
-            <div class="col-md-6"><label for="major" class="form-label">Major (students)</label>
+            <div class="col-md-6"><label for="major" class="form-label">Major <span class="text-muted small">(required for students)</span></label>
               <select class="form-select" id="major" name="major"><option value="">—</option>
                 {% for code, label in majors.items() %}<option value="{{ code }}" {% if form.major == code %}selected{% endif %}>{{ label }}</option>{% endfor %}
               </select></div>
@@ -30,14 +30,23 @@
               <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="email_verified" name="email_verified" value="true" {% if form.email_verified %}checked{% endif %}>
                 <label class="form-check-label" for="email_verified">Email verified</label></div>
             </div>
-            <div class="col-md-6"><label for="new_password" class="form-label">Set new password <span class="text-muted small">(optional)</span></label>
-              <input type="password" class="form-control" id="new_password" name="new_password" autocomplete="new-password"></div>
+            <div class="col-md-6"><label for="new_password" class="form-label">Set temporary password <span class="text-muted small">(optional)</span></label>
+              <input type="password" class="form-control" id="new_password" name="new_password" autocomplete="new-password">
+              <div class="form-text">The user will have to change it at next sign-in.</div></div>
             {% else %}
-            <div class="col-md-6"><label for="password" class="form-label">Password <span class="text-muted small">(leave blank to generate)</span></label>
-              <input type="password" class="form-control" id="password" name="password" autocomplete="new-password"></div>
+            <div class="col-md-6"><label for="password" class="form-label">Temporary password <span class="text-muted small">(leave blank to generate one)</span></label>
+              <div class="input-group">
+                <input type="password" class="form-control" id="password" name="password" autocomplete="new-password" aria-describedby="tmpHelp">
+                <button class="btn btn-outline-secondary" type="button" data-toggle-password="password" aria-label="Show password"><i class="bi bi-eye"></i></button>
+              </div>
+              <div id="tmpHelp" class="form-text">At least 8 characters with letters and numbers. A generated one is shown once after saving.</div></div>
             {% endif %}
           </div>
-          <div class="alert alert-info small mt-3 mb-0"><i class="bi bi-info-circle"></i> Admin and faculty users must set up an authenticator app (TOTP 2FA) on their first sign-in.</div>
+          {% if edit_user and edit_user.must_change_password %}
+          <div class="alert alert-warning small mt-3 mb-0"><i class="bi bi-key"></i> This user still has a temporary password and must change it at next sign-in.</div>
+          {% endif %}
+          <div class="alert alert-info small mt-3 mb-0"><i class="bi bi-info-circle"></i>
+            New users must replace the temporary password on their first sign-in. Admin and faculty users must also set up an authenticator app (TOTP 2FA).</div>
           <button class="btn btn-primary mt-3" type="submit">{{ 'Save changes' if edit_user else 'Create user' }}</button>
         </form>
       </div>

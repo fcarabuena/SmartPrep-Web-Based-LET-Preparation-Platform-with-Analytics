@@ -10,7 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.config import settings
-from app.deps import LoginRequired, csrf_protect
+from app.deps import LoginRequired, PasswordChangeRequired, csrf_protect
 from app.middleware import AppMiddleware
 from app.routers import ROUTERS
 from app.services.activity import log_error
@@ -58,6 +58,13 @@ async def login_required_handler(request: Request, exc: LoginRequired):
         return JSONResponse({"detail": "Not authenticated"}, status_code=401)
     nxt = request.url.path + (f"?{request.url.query}" if request.url.query else "")
     return RedirectResponse(f"/login?next={quote(nxt)}", status_code=303)
+
+
+@app.exception_handler(PasswordChangeRequired)
+async def password_change_handler(request: Request, exc: PasswordChangeRequired):
+    if _wants_json(request):
+        return JSONResponse({"detail": "Password change required"}, status_code=403)
+    return RedirectResponse("/account/change-password", status_code=303)
 
 
 @app.exception_handler(StarletteHTTPException)

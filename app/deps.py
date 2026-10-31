@@ -39,9 +39,15 @@ def get_current_user_optional(request: Request, db: Session = Depends(get_db)) -
     return user
 
 
+class PasswordChangeRequired(Exception):
+    """Raised for users holding a temporary password; handled with a redirect to the change-password page."""
+
+
 def get_current_user(user: User | None = Depends(get_current_user_optional)) -> User:
     if user is None:
         raise LoginRequired()
+    if user.must_change_password:
+        raise PasswordChangeRequired()
     return user
 
 

@@ -24,6 +24,12 @@ After 5 wrong passwords the account locks for 15 minutes. Wait, or ask the admin
 
 **I lost the phone with my authenticator app (faculty/admin).**
 Ask the administrator to use **Reset 2FA** on your account; you will set it up again at the next sign-in.
+If you are the only administrator, run `scripts\create_admin.py --email <your email> --reset-2fa` from the project
+folder with `DATABASE_URL` pointing at the live database.
+
+**I received an account from the administrator. Why must I change my password?**
+Accounts created by an administrator start with a temporary password. On your first sign-in you choose your own
+password (and set up 2FA if you are faculty or admin) before you can use the system.
 
 **What does "Keep me signed in" do?**
 It keeps you signed in for 30 days on that browser. Without it, you are signed out when the browser closes or after
