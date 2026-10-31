@@ -1,21 +1,89 @@
 {% extends "base.html" %}
-{% from "partials/macros.html" import stat %}
+{% from "partials/macros.html" import stat, pct_badge with context %}
+{% from "partials/charts.html" import gauge %}
 {% block title %}Dashboard{% endblock %}
 {% block page_title %}Dashboard{% endblock %}
 {% block content %}
 <div class="welcome-banner mb-4">
   <div>
     <h1 class="h3 fw-bold mb-1">Hello, {{ current_user.full_name.split(' ')[0] }}! 👋</h1>
-    <p class="mb-0 opacity-75">{{ current_user.major_label }} · Keep going — every quiz brings you closer to passing the LET.</p>
+    <p class="mb-0 opacity-75">{{ current_user.major_label }} · Level {{ level.level }} · {{ points }} points{% if rank %} · Rank #{{ rank }} of {{ of }}{% endif %}</p>
+  </div>
+  <a href="/study-plan" class="btn btn-light"><i class="bi bi-signpost-split"></i> Study Plan</a>
+</div>
+{% if not current_user.major %}<div class="alert alert-warning"><i class="bi bi-exclamation-circle"></i> Choose your major in <a href="/profile">your profile</a> to see your Major Core content.</div>{% endif %}
+{% for at in in_progress %}
+<div class="alert alert-warning d-flex justify-content-between align-items-center"><span><i class="bi bi-hourglass-split"></i> You have an unfinished attempt: <strong>{{ at.display_title }}</strong></span>
+  <a class="btn btn-sm btn-warning" href="/attempts/{{ at.id }}">Resume</a></div>
+{% endfor %}
+<div class="row g-3 mb-4">
+  <div class="col-lg-4">
+    <div class="card h-100"><div class="card-body d-flex align-items-center gap-4">
+      {{ gauge(ready) }}
+      <div class="small">
+        <div class="fw-semibold mb-1">LET Readiness Score</div>
+        {% for part in ready.parts %}<div class="d-flex justify-content-between gap-3"><span class="text-muted">{{ part.name }}</span><span class="fw-semibold">{{ '%.0f'|format(part.mastery) }}%</span></div>{% endfor %}
+        <a class="d-inline-block mt-2" href="/progress">View my progress →</a>
+      </div>
+    </div></div>
+  </div>
+  <div class="col-lg-8">
+    <div class="row g-3 h-100">
+      <div class="col-6">{{ stat('Quizzes completed', completed, 'check2-square', 'success') }}</div>
+      <div class="col-6">{{ stat('Points', points, 'star', 'warning', level.to_next ~ ' to level ' ~ (level.level + 1)) }}</div>
+      <div class="col-6">{{ stat('Badges', badges|length, 'award', 'info') }}</div>
+      <div class="col-6">{{ stat('Rank', ('#' ~ rank) if rank else '—', 'trophy', 'primary', ('of ' ~ of) if rank else 'earn points to rank') }}</div>
+    </div>
   </div>
 </div>
-<div class="row g-3 mb-4">
-  <div class="col-6 col-xl-3">{{ stat('LET Readiness', '—', 'speedometer', 'primary', 'Take a quiz to start') }}</div>
-  <div class="col-6 col-xl-3">{{ stat('Quizzes completed', 0, 'check2-square', 'success') }}</div>
-  <div class="col-6 col-xl-3">{{ stat('Points', 0, 'star', 'warning') }}</div>
-  <div class="col-6 col-xl-3">{{ stat('Badges', 0, 'award', 'info') }}</div>
-</div>
-<div class="card">
-  <div class="card-body text-muted">Your personalized dashboard will show readiness, upcoming deadlines and recommendations as you use Smart Prep.</div>
+<div class="row g-4">
+  <div class="col-xl-6">
+    <div class="card mb-4">
+      <div class="card-header fw-semibold"><i class="bi bi-calendar-event"></i> Upcoming deadlines</div>
+      <ul class="list-group list-group-flush small">
+        {% for d in deadlines %}
+        <li class="list-group-item d-flex justify-content-between align-items-center gap-2">
+          <span><a href="/assessments/{{ d.a.id }}/start" class="fw-semibold">{{ d.a.title }}</a><br><span class="text-muted">{{ d.a.kind_label }} · due {{ d.a.due_at|dt }}</span></span>
+          {% if d.done %}<span class="badge text-bg-success"><i class="bi bi-check"></i> Passed</span>{% else %}<span class="badge text-bg-warning">{{ d.a.due_at|until }}</span>{% endif %}
+        </li>
+        {% else %}<li class="list-group-item text-muted">No deadlines in the next 14 days.</li>{% endfor %}
+      </ul>
+    </div>
+    {% if goals is defined %}
+    <div class="card mb-4">
+      <div class="card-header d-flex justify-content-between"><span class="fw-semibold"><i class="bi bi-bullseye"></i> My goals</span>{% if has_route(request, 'goals') %}<a class="small" href="/goals">Manage</a>{% endif %}</div>
+      <ul class="list-group list-group-flush small">
+        {% for g in goals %}
+        <li class="list-group-item"><div class="d-flex justify-content-between"><span class="fw-semibold">{{ g.goal.title }}</span><span>{{ g.pct|int }}%</span></div>
+          <div class="progress mt-1" style="height: 6px" role="progressbar" aria-label="Goal progress" aria-valuenow="{{ g.pct|int }}" aria-valuemin="0" aria-valuemax="100"><div class="progress-bar" style="width: {{ g.pct|int }}%"></div></div>
+          <div class="text-muted mt-1">{{ g.current }} / {{ g.goal.target_value|round(1) }} · due {{ g.goal.deadline|dt }}</div></li>
+        {% else %}<li class="list-group-item text-muted">No active goals.{% if has_route(request, 'goals') %} <a href="/goals">Set one</a>.{% endif %}</li>{% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+  </div>
+  <div class="col-xl-6">
+    <div class="card mb-4">
+      <div class="card-header d-flex justify-content-between"><span class="fw-semibold"><i class="bi bi-magic"></i> Focus next</span><a class="small" href="/study-plan">Study plan</a></div>
+      <ul class="list-group list-group-flush small">
+        {% for item in plan %}
+        <li class="list-group-item d-flex justify-content-between align-items-center gap-2">
+          <span><span class="fw-semibold">{{ item.topic.name }}</span><br><span class="text-muted">{{ item.topic.course.name }}</span></span>
+          <span class="text-nowrap">{% if item.mastery is not none %}{{ pct_badge(item.mastery) }}{% else %}<span class="badge text-bg-secondary">new</span>{% endif %}
+            <a class="btn btn-sm btn-outline-primary ms-1" href="/practice/topic/{{ item.topic.id }}">Practice</a></span>
+        </li>
+        {% else %}<li class="list-group-item text-muted">Take your first quiz to get recommendations.</li>{% endfor %}
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-header fw-semibold"><i class="bi bi-clock-history"></i> Recent results</div>
+      <ul class="list-group list-group-flush small">
+        {% for at in recent %}
+        <li class="list-group-item d-flex justify-content-between align-items-center"><a href="/attempts/{{ at.id }}/result">{{ at.display_title }}</a>
+          <span>{{ pct_badge(at.score_pct) }} <span class="text-muted">{{ at.submitted_at|ago }}</span></span></li>
+        {% else %}<li class="list-group-item text-muted">No results yet. <a href="/quizzes">Browse quizzes</a>.</li>{% endfor %}
+      </ul>
+    </div>
+  </div>
 </div>
 {% endblock %}

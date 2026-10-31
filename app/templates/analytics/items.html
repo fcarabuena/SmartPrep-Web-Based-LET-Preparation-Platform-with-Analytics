@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import empty with context %}
+{% block title %}Item Analysis{% endblock %}
+{% block page_title %}Item Analysis{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
+  <div>
+    <h1 class="h4 fw-bold mb-0">Item analysis</h1>
+    <p class="small text-muted mb-0">Difficulty index p = proportion correct. Discrimination D = p(upper 27%) − p(lower 27%), using each examinee's first attempt.</p>
+  </div>
+  <form method="get" data-autosubmit><label class="visually-hidden" for="assessment">Assessment</label>
+    <select class="form-select" id="assessment" name="assessment" style="min-width: 280px">
+      {% for a in options %}<option value="{{ a.id }}" {% if a.id == assessment %}selected{% endif %}>{{ a.title }} ({{ counts[a.id] }} attempts)</option>
+      {% else %}<option value="">No assessments with attempts</option>{% endfor %}
+    </select><noscript><button class="btn btn-outline-primary mt-1">Analyze</button></noscript></form>
+</div>
+{% if data['items'] %}
+<div class="row g-3 mb-3">
+  <div class="col-sm-4"><div class="card card-body py-2"><span class="small text-muted">Examinees</span><span class="fw-bold fs-5">{{ data.examinees }}</span></div></div>
+  <div class="col-sm-4"><div class="card card-body py-2"><span class="small text-muted">Upper / lower group size</span><span class="fw-bold fs-5">{{ data.group_size }}</span></div></div>
+  <div class="col-sm-4"><div class="card card-body py-2"><span class="small text-muted">Items flagged</span><span class="fw-bold fs-5">{{ data['items']|selectattr('flags')|list|length }} / {{ data['items']|length }}</span></div></div>
+</div>
+{% if data.examinees < 10 %}<div class="alert alert-warning small"><i class="bi bi-exclamation-triangle"></i> Fewer than 10 examinees — indices are unstable; interpret with caution.</div>{% endif %}
+<div class="card"><div class="table-responsive"><table class="table align-middle mb-0">
+  <thead class="table-light"><tr><th>Item</th><th class="text-center">n</th><th class="text-center">p</th><th class="text-center">D</th><th class="d-none d-lg-table-cell">Choices (A/B/C/D/blank)</th><th>Decision</th></tr></thead>
+  <tbody>{% for it in data['items'] %}
+    <tr>
+      <td class="small" style="max-width: 420px"><a href="/questions/{{ it.question.id }}/edit">#{{ it.question.id }}</a> {{ it.question.stem|truncate(110) }}
+        {% for f in it.flags %}<div><span class="badge text-bg-light border flag-badge"><i class="bi bi-flag-fill text-danger"></i> {{ f }}</span></div>{% endfor %}</td>
+      <td class="text-center">{{ it.n }}</td>
+      <td class="text-center"><span class="fw-semibold">{{ '%.2f'|format(it.p) }}</span><div class="small text-muted">{{ it.difficulty }}</div></td>
+      <td class="text-center"><span class="fw-semibold">{{ '%.2f'|format(it.d) if it.d is not none else '—' }}</span><div class="small text-muted">{{ it.discrimination }}</div></td>
+      <td class="d-none d-lg-table-cell small">{% for k in ['A','B','C','D','-'] %}<span class="me-2 {% if k == it.key %}fw-bold text-success-emphasis{% endif %}">{{ k if k != '-' else '∅' }}:{{ it.choices[k] }}</span>{% endfor %}</td>
+      <td><span class="badge text-bg-{{ {'Retain': 'success', 'Revise': 'warning', 'Reject / rewrite': 'danger'}[it.decision] }}">{{ it.decision }}</span></td>
+    </tr>
+  {% endfor %}</tbody>
+</table></div></div>
+<p class="small text-muted mt-2">Guide: p &lt; 0.20 very difficult, 0.20–0.90 acceptable, &gt; 0.90 very easy. D ≥ 0.40 very good, 0.30–0.39 good, 0.20–0.29 fair, &lt; 0.20 poor, negative → check the answer key.</p>
+{% else %}
+<div class="card">{{ empty('No submitted attempts to analyze yet.', 'bar-chart') }}</div>
+{% endif %}
+{% endblock %}

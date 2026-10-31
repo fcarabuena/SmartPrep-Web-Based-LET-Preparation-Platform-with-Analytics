@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% from "partials/charts.html" import chart_scripts %}
+{% block title %}My Progress{% endblock %}
+{% block page_title %}Progress{% endblock %}
+{% block content %}
+<h1 class="h4 fw-bold mb-3">My progress</h1>
+{% include "analytics/_progress_body.html" %}
+{% endblock %}
+{% block scripts %}{{ chart_scripts() }}{% endblock %}

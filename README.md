@@ -16,7 +16,7 @@ psycopg 3 · PostgreSQL (Neon) / SQLite (local) · pytest
 | 2 | Content: categories/courses/topics, question bank, review queue, import, resources | ✅ |
 | 3 | Assessments: exams/quizzes, timer, results, grades | ✅ |
 | 4 | Recommendations, adaptive practice, study plan, gamification | ✅ |
-| 5 | Analytics & reports | ⏳ |
+| 5 | Analytics & reports | ✅ |
 | 6 | Notifications, inbox, calendar, goals, forum | ⏳ |
 | 7 | Web scraping & optional Gemini generation | ⏳ |
 | 8 | Hardening, demo data, docs | ⏳ |
@@ -97,6 +97,24 @@ Tests use an in-memory SQLite database and never touch the network.
   first-attempt passers, then less time. Faculty can hide leaderboards from students.
 - **Games:** faculty-created timed quiz games and quiz bees, plus an instant "Quick Quiz Bee" (15 random questions
   across all subjects, 5 minutes).
+
+### Analytics (Phase 5)
+- **LET Readiness Score** = weighted category mastery. Secondary: Gen Ed 20%, Prof Ed 40%, Specialization 40%;
+  Elementary: Gen Ed 40%, Prof Ed 60% (configurable). Bands: Not ready / Developing (≥60) / Ready (≥75).
+- **Student Progress** (`/progress`): mastery by category, rank, badges, questions answered, time spent, quiz and
+  exam completion donuts, **Study Hot Zones** heatmap (courses × topics or Exam 1/2/3; green ≥85, yellow 75–84,
+  red <75, values always printed), progress by category (Exam 1/2/3 + improvement) and by course (correct %,
+  incorrect %, improvement, minutes), attempted vs correct, 8-week trend, strengths/weaknesses, recommendations.
+- **Faculty:** class KPIs (average score, pass rate, participation), category performance, weekly trend,
+  most-missed topics, **at-risk students** (low readiness or inactive N days), per-student drill-down with
+  "Send feedback", **item analysis** (difficulty index p, discrimination index D from upper/lower 27% on first
+  attempts, distractor counts, retain/revise/reject flags).
+- **Admin:** DAU/WAU/MAU, logins/registrations/submissions per day, peak-activity heatmap (weekday × hour, PH time),
+  average session length, popular content, content access by type, questions by source with approval rate,
+  **system health** (uptime, request counts, recent errors, DB size, table sizes).
+- **Report builder** (`/reports`): user activity, performance, content usage, engagement; date range + filters;
+  preview; export CSV / Excel / PDF.
+- Aggregations run as grouped SQL (dialect-aware for PostgreSQL and SQLite); heavy views are cached for 60 s.
 
 ## Configuration
 

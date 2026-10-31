@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import empty, pct_badge with context %}
+{% block title %}Students{% endblock %}
+{% block page_title %}Students{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h1 class="h4 fw-bold mb-0">Students</h1>
+  <form method="get" class="d-flex gap-2" role="search"><label class="visually-hidden" for="q">Search</label>
+    <input class="form-control" id="q" name="q" value="{{ q }}" placeholder="Name or email"><button class="btn btn-outline-primary">Search</button></form>
+</div>
+<div class="card"><div class="table-responsive"><table class="table table-hover align-middle mb-0">
+  <thead class="table-light"><tr><th>Student</th><th class="d-none d-md-table-cell">Major</th><th class="text-end">Quizzes</th><th class="text-end">Avg score</th><th class="d-none d-md-table-cell">Last seen</th><th></th></tr></thead>
+  <tbody>{% for s in students %}{% set st = stats.get(s.id) %}
+    <tr><td><div class="fw-semibold">{{ s.full_name }}</div><div class="small text-muted">{{ s.email }}</div></td>
+      <td class="d-none d-md-table-cell small">{{ s.major_label }}</td>
+      <td class="text-end">{{ st[0] if st else 0 }}</td><td class="text-end">{{ pct_badge(st[1] if st else none) }}</td>
+      <td class="d-none d-md-table-cell small">{{ s.last_seen_at|ago }}</td>
+      <td class="text-end"><a class="btn btn-sm btn-outline-primary" href="/analytics/students/{{ s.id }}">Drill down</a></td></tr>
+  {% else %}<tr><td colspan="6">{{ empty('No students found.', 'people') }}</td></tr>{% endfor %}</tbody>
+</table></div></div>
+{% endblock %}

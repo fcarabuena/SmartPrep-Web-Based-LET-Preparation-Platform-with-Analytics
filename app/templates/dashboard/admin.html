@@ -1,19 +1,18 @@
 {% extends "base.html" %}
-{% from "partials/macros.html" import stat %}
+{% from "partials/charts.html" import chart_scripts %}
 {% block title %}Admin Dashboard{% endblock %}
 {% block page_title %}Admin Dashboard{% endblock %}
 {% block content %}
 <div class="welcome-banner mb-4">
   <div>
     <h1 class="h3 fw-bold mb-1">Administration</h1>
-    <p class="mb-0 opacity-75">System overview for Smart Prep.</p>
+    <p class="mb-0 opacity-75">{{ m.totals.approved }} approved of {{ m.totals.questions }} questions · {{ m.totals.resources }} resources · class average {{ ('%.0f%%'|format(c.avg_score)) if c.avg_score is not none else '—' }}</p>
   </div>
-  <a href="/admin/users/new" class="btn btn-light"><i class="bi bi-person-plus"></i> Add user</a>
+  <div class="d-flex gap-2">
+    <a href="/admin/users/new" class="btn btn-light"><i class="bi bi-person-plus"></i> Add user</a>
+    <a href="/reports" class="btn btn-outline-light"><i class="bi bi-file-earmark-bar-graph"></i> Reports</a>
+  </div>
 </div>
-<div class="row g-3">
-  <div class="col-6 col-xl-3">{{ stat('Students', role_counts.get('student', 0), 'mortarboard', 'primary') }}</div>
-  <div class="col-6 col-xl-3">{{ stat('Faculty', role_counts.get('faculty', 0), 'person-workspace', 'success') }}</div>
-  <div class="col-6 col-xl-3">{{ stat('Admins', role_counts.get('admin', 0), 'shield-lock', 'warning') }}</div>
-  <div class="col-6 col-xl-3">{{ stat('Total users', role_counts.values()|sum, 'people', 'info') }}</div>
-</div>
+{% include "analytics/_admin_body.html" %}
 {% endblock %}
+{% block scripts %}{{ chart_scripts() }}{% endblock %}

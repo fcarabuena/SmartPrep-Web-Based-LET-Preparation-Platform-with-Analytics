@@ -1,0 +1,79 @@
+{% from "partials/charts.html" import chart %}
+{% from "partials/macros.html" import stat, empty with context %}
+{# expects: m (admin_metrics) #}
+<div class="row g-3 mb-4">
+  <div class="col-6 col-xl-3">{{ stat('Daily active users', m.dau, 'person-check', 'primary', 'WAU ' ~ m.wau ~ ' · MAU ' ~ m.mau) }}</div>
+  <div class="col-6 col-xl-3">{{ stat('Students', m.users.get('student', 0), 'mortarboard', 'success', m.users.get('faculty', 0) ~ ' faculty · ' ~ m.users.get('admin', 0) ~ ' admin') }}</div>
+  <div class="col-6 col-xl-3">{{ stat('Quizzes submitted', m.totals.attempts, 'journal-check', 'info', m.totals.assessments ~ ' assessments') }}</div>
+  <div class="col-6 col-xl-3">{{ stat('Avg session length', ('%.1f min'|format(m.session_minutes)) if m.session_minutes is not none else '—', 'stopwatch', 'warning', 'last 14 days') }}</div>
+</div>
+<div class="row g-4 mb-4">
+  <div class="col-xl-6">
+    <div class="card h-100"><div class="card-header fw-semibold">Logins per day (30 days)</div><div class="card-body">
+      {{ chart('ch-logins', 'bar', m.logins|map(attribute='day')|list, [{'label': 'Logins', 'data': m.logins|map(attribute='n')|list, 'series': 0}], {'integer': True, 'aria': 'Logins per day'}) }}
+    </div></div>
+  </div>
+  <div class="col-xl-6">
+    <div class="card h-100"><div class="card-header fw-semibold">Registrations &amp; quizzes per day (30 days)</div><div class="card-body">
+      {{ chart('ch-regs', 'line', m.attempts|map(attribute='day')|list, [
+          {'label': 'Quizzes submitted', 'data': m.attempts|map(attribute='n')|list, 'series': 0},
+          {'label': 'New students', 'data': m.registrations|map(attribute='n')|list, 'series': 1}], {'integer': True, 'aria': 'Registrations and submissions per day'}) }}
+    </div></div>
+  </div>
+</div>
+<div class="card mb-4">
+  <div class="card-header fw-semibold">Peak activity (PH time, last 30 days)</div>
+  <div class="card-body">
+    {% set ramp = ['#f1f5f9', '#cde2fb', '#9ec5f4', '#6da7ec', '#3987e5', '#256abf', '#184f95', '#0d366b'] %}
+    <div class="table-responsive">
+      <table class="table table-sm peak-grid mb-2" aria-label="Activity by weekday and hour">
+        <thead><tr><th></th>{% for h in range(24) %}<th class="text-center">{{ h }}</th>{% endfor %}</tr></thead>
+        <tbody>
+        {% for d in range(7) %}
+          <tr><th class="text-nowrap">{{ ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d] }}</th>
+          {% for h in range(24) %}{% set v = m.heat[d][h] %}
+            <td style="background: {{ ramp[0] if not v else ramp[1 + ((v / m.heat_peak) * 6)|round|int] }}" title="{{ ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d] }} {{ h }}:00 — {{ v }} events"></td>
+          {% endfor %}</tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="small text-muted">Darker = more page views and logins. Peak: {{ m.heat_peak }} events in one hour slot.</div>
+  </div>
+</div>
+<div class="row g-4 mb-4">
+  <div class="col-xl-6">
+    <div class="card h-100"><div class="card-header fw-semibold">Popular resources (30 days)</div>
+      <ul class="list-group list-group-flush small">{% for r in m.popular_resources %}
+        <li class="list-group-item d-flex justify-content-between"><span>{{ r.title }} <span class="text-muted">· {{ r.kind }}</span></span><span class="fw-semibold">{{ r.v }} views</span></li>
+      {% else %}<li class="list-group-item text-muted">No resource views yet.</li>{% endfor %}</ul>
+    </div>
+  </div>
+  <div class="col-xl-6">
+    <div class="card h-100"><div class="card-header fw-semibold">Popular assessments (30 days)</div>
+      <ul class="list-group list-group-flush small">{% for a in m.popular_assessments %}
+        <li class="list-group-item d-flex justify-content-between"><span>{{ a[1] }}</span><span class="fw-semibold">{{ a[3] }} attempts</span></li>
+      {% else %}<li class="list-group-item text-muted">No attempts yet.</li>{% endfor %}</ul>
+    </div>
+  </div>
+</div>
+<div class="row g-4">
+  <div class="col-xl-4">
+    <div class="card h-100"><div class="card-header fw-semibold">Content access by type</div><div class="card-body">
+      {{ chart('ch-access', 'doughnut', m.content_access|map(attribute=0)|list, [{'label': 'Views', 'data': m.content_access|map(attribute=1)|list}], {'size': 'sm', 'aria': 'Resource views by type'}) }}
+      <div class="small text-center mt-2">{% for k, n in m.content_access %}{{ k }}: <strong>{{ n }}</strong>{{ ' · ' if not loop.last }}{% endfor %}</div>
+    </div></div>
+  </div>
+  <div class="col-xl-8">
+    <div class="card h-100"><div class="card-header fw-semibold">Questions by source &amp; approval rate</div>
+      <div class="table-responsive"><table class="table table-sm align-middle mb-0">
+        <thead class="table-light"><tr><th>Source</th><th class="text-end">Total</th><th class="text-end">Approved</th><th class="text-end">Pending</th><th class="text-end">Rejected</th><th class="text-end">Approval rate</th></tr></thead>
+        <tbody>{% for s in m.sources %}
+          <tr><td>{{ s.source|replace('_', ' ')|capitalize }}</td><td class="text-end">{{ s.total }}</td><td class="text-end">{{ s.approved }}</td>
+            <td class="text-end">{{ s.pending_review }}</td><td class="text-end">{{ s.rejected }}</td>
+            <td class="text-end fw-semibold">{{ ('%.0f%%'|format(s.approval_rate)) if s.approval_rate is not none else '—' }}</td></tr>
+        {% endfor %}</tbody>
+      </table></div>
+    </div>
+  </div>
+</div>

@@ -124,3 +124,15 @@ body { background: var(--bs-body-bg); }
   .print-only { display: block !important; }
 }
 .print-only { display: none; }
+
+/* analytics */
+.legend-swatch { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 4px; border: 1px solid rgba(11, 11, 11, .1); }
+.heatmap { border-collapse: separate; border-spacing: 2px; }
+.heatmap td.cell, .heatmap th { border-radius: 4px; }
+.heatmap td.cell .t { display: block; font-size: .68rem; font-weight: 500; opacity: .8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 110px; }
+.gauge.sm { width: 120px; height: 120px; }
+.gauge.sm .gauge-inner { width: 94px; height: 94px; }
+.kpi-delta { font-size: .8rem; }
+.peak-grid td { width: 3.5%; height: 22px; padding: 0 !important; border: 1px solid #fff; }
+.peak-grid th { font-size: .65rem; font-weight: 500; color: #898781; padding: 2px !important; }
+.flag-badge { font-size: .7rem; }

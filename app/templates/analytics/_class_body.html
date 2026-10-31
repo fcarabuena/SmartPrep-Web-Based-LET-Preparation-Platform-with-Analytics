@@ -1,0 +1,44 @@
+{% from "partials/charts.html" import chart %}
+{% from "partials/macros.html" import stat, pct_badge, empty with context %}
+{# expects: c (class_overview), risk (list) #}
+<div class="row g-3 mb-4">
+  <div class="col-6 col-xl-3">{{ stat('Average score', ('%.1f%%'|format(c.avg_score)) if c.avg_score is not none else '—', 'percent', 'primary', c.attempts ~ ' graded attempts') }}</div>
+  <div class="col-6 col-xl-3">{{ stat('Pass rate', ('%.0f%%'|format(c.pass_rate)) if c.pass_rate is not none else '—', 'check2-circle', 'success') }}</div>
+  <div class="col-6 col-xl-3">{{ stat('Participation', ('%.0f%%'|format(c.participation)) if c.participation is not none else '—', 'people', 'info', c.active ~ ' of ' ~ c.students ~ ' students active') }}</div>
+  <div class="col-6 col-xl-3"><a class="text-decoration-none" href="/analytics/at-risk">{{ stat('At-risk students', risk_count, 'exclamation-triangle', 'danger', 'view list →') }}</a></div>
+</div>
+<div class="row g-4 mb-4">
+  <div class="col-xl-6">
+    <div class="card h-100"><div class="card-header fw-semibold">Category performance</div><div class="card-body">
+      {{ chart('ch-classcat', 'bar', c.category_perf|map(attribute='name')|list, [{'label': 'Percent correct', 'data': c.category_perf|map(attribute='pct')|list, 'series': 0}], {'percent': True, 'aria': 'Class percent correct per category'}) }}
+    </div></div>
+  </div>
+  <div class="col-xl-6">
+    <div class="card h-100"><div class="card-header fw-semibold">Weekly trend — average score</div><div class="card-body">
+      {{ chart('ch-classtrend', 'line', c.trend|map(attribute='week')|list, [{'label': 'Average score', 'data': c.trend|map(attribute='avg')|list, 'series': 0}], {'percent': True, 'aria': 'Class average score per week'}) }}
+    </div></div>
+  </div>
+</div>
+<div class="row g-4">
+  <div class="col-xl-7">
+    <div class="card h-100"><div class="card-header fw-semibold"><i class="bi bi-x-octagon"></i> Most-missed topics</div>
+      <div class="table-responsive"><table class="table table-sm align-middle mb-0">
+        <thead class="table-light"><tr><th>Topic</th><th class="text-end">Answered</th><th class="text-end">Missed</th><th class="text-end">Correct</th></tr></thead>
+        <tbody>{% for t in c.most_missed %}
+          <tr><td class="small"><span class="fw-semibold">{{ t.topic }}</span><div class="text-muted">{{ t.course }}</div></td>
+            <td class="text-end">{{ t.answered }}</td><td class="text-end">{{ t.missed }}</td><td class="text-end">{{ pct_badge(t.pct) }}</td></tr>
+        {% else %}<tr><td colspan="4">{{ empty('Not enough answers yet.', 'x-octagon') }}</td></tr>{% endfor %}</tbody>
+      </table></div>
+    </div>
+  </div>
+  <div class="col-xl-5">
+    <div class="card h-100"><div class="card-header d-flex justify-content-between"><span class="fw-semibold"><i class="bi bi-exclamation-triangle"></i> At-risk students</span><a class="small" href="/analytics/at-risk">See all</a></div>
+      <ul class="list-group list-group-flush small">
+        {% for r in risk %}<li class="list-group-item d-flex justify-content-between align-items-center gap-2">
+          <a href="/analytics/students/{{ r.user.id }}" class="fw-semibold">{{ r.user.full_name }}</a>
+          <span class="text-muted text-end">{{ r.reasons|join(' · ') }}</span></li>
+        {% else %}<li class="list-group-item text-muted">No students at risk. 🎉</li>{% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>

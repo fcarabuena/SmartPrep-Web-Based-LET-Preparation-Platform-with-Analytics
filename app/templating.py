@@ -51,6 +51,19 @@ def time_ago(dt: datetime | None) -> str:
     return "just now"
 
 
+def time_until(dt: datetime | None) -> str:
+    if dt is None:
+        return ""
+    secs = int((dt - utcnow()).total_seconds())
+    if secs <= 0:
+        return "now"
+    for unit, n in (("day", 86400), ("hour", 3600), ("minute", 60)):
+        if secs >= n:
+            v = secs // n
+            return f"in {v} {unit}{'s' if v != 1 else ''}"
+    return "in <1 minute"
+
+
 def fmt_duration(seconds: int | float | None) -> str:
     seconds = int(seconds or 0)
     h, rem = divmod(seconds, 3600)
@@ -77,7 +90,7 @@ def score_class(pct: float | None) -> str:
 
 
 templates.env.filters.update(
-    dt=fmt_dt, input_dt=fmt_input_dt, ago=time_ago, duration=fmt_duration, nl2br=nl2br, score_class=score_class
+    dt=fmt_dt, input_dt=fmt_input_dt, ago=time_ago, until=time_until, duration=fmt_duration, nl2br=nl2br, score_class=score_class
 )
 
 

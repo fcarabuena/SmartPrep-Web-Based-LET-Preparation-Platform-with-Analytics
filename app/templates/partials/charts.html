@@ -1,0 +1,36 @@
+{#
+  chart(id, type, labels, datasets, opts)
+  datasets: [{"label": "...", "data": [...], "series": 0}]  (series = palette slot; or "status": "good|warning|critical")
+  opts: {"percent": true, "stacked": false, "horizontal": false, "size": "", "aria": "description"}
+#}
+{% macro chart(id, type, labels, datasets, opts={}) -%}
+<div class="chart-box {{ opts.get('size', '') }}">
+  <canvas data-chart="{{ id }}" role="img" aria-label="{{ opts.get('aria', 'Chart') }}"></canvas>
+</div>
+<script type="application/json" id="{{ id }}">{{ {"type": type, "labels": labels, "datasets": datasets, "opts": opts}|tojson }}</script>
+{%- endmacro %}
+
+{% macro chart_scripts() -%}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="/static/js/charts.js"></script>
+{%- endmacro %}
+
+{% macro gauge(ready, size='') -%}
+{% set col = {'success': '#0ca30c', 'warning': '#fab219', 'danger': '#d03b3b'}[ready.color] %}
+<div class="gauge {{ size }}" style="--val: {{ ready.score }}; --col: {{ col }}" role="img" aria-label="LET readiness {{ '%.0f'|format(ready.score) }} percent, {{ ready.band }}">
+  <div class="gauge-inner">
+    <div class="fs-3 fw-bold lh-1">{{ '%.0f'|format(ready.score) }}%</div>
+    <div class="small fw-semibold mt-1 text-{{ ready.color }}-emphasis">
+      <i class="bi bi-{{ {'success': 'check-circle-fill', 'warning': 'exclamation-circle-fill', 'danger': 'x-circle-fill'}[ready.color] }}"></i> {{ ready.band }}</div>
+  </div>
+</div>
+{%- endmacro %}
+
+{% macro zone_legend() -%}
+<div class="d-flex flex-wrap gap-3 small text-muted">
+  <span><span class="legend-swatch hz-green"></span> ≥ 85% strong</span>
+  <span><span class="legend-swatch hz-yellow"></span> 75–84% developing</span>
+  <span><span class="legend-swatch hz-red"></span> &lt; 75% needs work</span>
+  <span><span class="legend-swatch hz-none"></span> no data</span>
+</div>
+{%- endmacro %}

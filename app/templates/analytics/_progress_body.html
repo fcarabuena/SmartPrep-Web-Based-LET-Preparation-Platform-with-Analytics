@@ -1,0 +1,173 @@
+{% from "partials/charts.html" import chart, gauge, zone_legend %}
+{% from "partials/macros.html" import stat, pct_badge, empty with context %}
+{# expects: student, p, ready, rank, of, points, category, course, mode, categories, courses, plan, base_url #}
+<form class="d-flex flex-wrap gap-2 mb-4 filters" method="get" data-autosubmit>
+  <label class="visually-hidden" for="f-category">Category</label>
+  <select class="form-select w-auto" id="f-category" name="category"><option value="0">All categories</option>
+    {% for c in categories %}<option value="{{ c.id }}" {% if category == c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select>
+  <label class="visually-hidden" for="f-course">Course</label>
+  <select class="form-select w-auto" id="f-course" name="course"><option value="0">All courses</option>
+    {% for c in courses %}{% if not category or c.category_id == category %}<option value="{{ c.id }}" {% if course == c.id %}selected{% endif %}>{{ c.name }}</option>{% endif %}{% endfor %}</select>
+  <input type="hidden" name="mode" value="{{ mode }}">
+  <noscript><button class="btn btn-outline-primary">Apply</button></noscript>
+</form>
+
+<div class="row g-3 mb-4">
+  <div class="col-lg-4">
+    <div class="card h-100"><div class="card-body d-flex align-items-center gap-4">
+      {{ gauge(ready) }}
+      <div class="small">
+        <div class="fw-semibold mb-1">LET readiness</div>
+        {% for part in ready.parts %}<div class="d-flex justify-content-between gap-3"><span class="text-muted">{{ part.name }} ({{ part.weight|int }}%)</span><span class="fw-semibold">{{ '%.0f'|format(part.mastery) }}%</span></div>{% endfor %}
+        <div class="text-muted mt-2">Ready ≥ {{ ready.bands.ready|int }}% · Developing ≥ {{ ready.bands.developing|int }}%</div>
+      </div>
+    </div></div>
+  </div>
+  <div class="col-lg-8">
+    <div class="row g-3 h-100">
+      <div class="col-6 col-md-3">{{ stat('My rank', ('#' ~ rank) if rank else '—', 'trophy', 'warning', ('of ' ~ of) if rank else 'earn points to rank') }}</div>
+      <div class="col-6 col-md-3">{{ stat('Badges', p.badges, 'award', 'info', points ~ ' points') }}</div>
+      <div class="col-6 col-md-3">{{ stat('Questions answered', p.questions, 'patch-check', 'primary', p.attempts ~ ' quizzes') }}</div>
+      <div class="col-6 col-md-3">{{ stat('Time spent', p.seconds|duration, 'clock', 'success') }}</div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4 mb-4">
+  <div class="col-xl-6">
+    <div class="card h-100">
+      <div class="card-header fw-semibold">Mastery by category</div>
+      <div class="card-body">
+        {{ chart('ch-cat', 'bar', p.categories|map(attribute='name')|list, [{'label': 'Mastery', 'data': p.categories|map(attribute='pct')|list, 'series': 0}], {'percent': True, 'aria': 'Percent correct per LET category'}) }}
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="card h-100">
+      <div class="card-header fw-semibold">Quiz completion</div>
+      <div class="card-body">
+        {{ chart('ch-quiz', 'doughnut', ['Completed', 'Remaining'], [{'label': 'Quizzes', 'data': [p.quiz_done, p.quiz_total - p.quiz_done], 'colors': ['#2a78d6', '#e1e0d9']}], {'size': 'sm', 'aria': 'Quiz completion'}) }}
+        <div class="text-center small mt-2"><strong>{{ p.quiz_done }}</strong> of {{ p.quiz_total }} practice quizzes</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="card h-100">
+      <div class="card-header fw-semibold">Exam completion</div>
+      <div class="card-body">
+        {{ chart('ch-exam', 'doughnut', ['Completed', 'Remaining'], [{'label': 'Exams', 'data': [p.exam_done, p.exam_total - p.exam_done], 'colors': ['#eb6834', '#e1e0d9']}], {'size': 'sm', 'aria': 'Mock exam completion'}) }}
+        <div class="text-center small mt-2"><strong>{{ p.exam_done }}</strong> of {{ p.exam_total }} mock exams</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <span class="fw-semibold"><i class="bi bi-thermometer-half"></i> Study Hot Zones</span>
+    <div class="btn-group btn-group-sm" role="group" aria-label="Heatmap columns">
+      <a class="btn btn-outline-secondary {% if mode == 'topics' %}active{% endif %}" href="?category={{ category }}&course={{ course }}&mode=topics">Topics</a>
+      <a class="btn btn-outline-secondary {% if mode == 'exams' %}active{% endif %}" href="?category={{ category }}&course={{ course }}&mode=exams">Exam 1 / 2 / 3</a>
+    </div>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-sm heatmap mb-2">
+        {% if mode == 'exams' %}<thead><tr><th>Course</th><th class="text-center">Exam 1</th><th class="text-center">Exam 2</th><th class="text-center">Exam 3</th></tr></thead>{% endif %}
+        <tbody>
+        {% for row in (p.heat_exams if mode == 'exams' else p.heat_topics) %}
+          <tr>
+            <th class="small fw-semibold text-nowrap align-middle">{{ row.course }}</th>
+            {% for cell in row.cells %}
+            <td class="cell hz-{{ cell.zone }}" title="{{ cell.name }}: {{ ('%.0f%%'|format(cell.pct)) if cell.pct is not none else 'no data' }}">
+              {% if mode == 'topics' %}<span class="t">{{ cell.name }}</span>{% endif %}
+              {{ ('%.0f%%'|format(cell.pct)) if cell.pct is not none else '—' }}
+            </td>
+            {% endfor %}
+          </tr>
+        {% else %}
+          <tr><td>{{ empty('No courses for this filter.', 'grid-3x3') }}</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {{ zone_legend() }}
+  </div>
+</div>
+
+<div class="row g-4 mb-4">
+  <div class="col-xl-6">
+    <div class="card h-100">
+      <div class="card-header fw-semibold">Attempted vs correct {{ 'per course' if category or course else 'per category' }}</div>
+      <div class="card-body">
+        {{ chart('ch-avc', 'line', p.attempted_vs_correct|map(attribute=0)|list, [
+            {'label': 'Attempted', 'data': p.attempted_vs_correct|map(attribute=1)|list, 'series': 0},
+            {'label': 'Correct', 'data': p.attempted_vs_correct|map(attribute=2)|list, 'series': 2}], {'integer': True, 'aria': 'Questions attempted and answered correctly'}) }}
+      </div>
+    </div>
+  </div>
+  <div class="col-xl-6">
+    <div class="card h-100">
+      <div class="card-header fw-semibold">Weekly trend (average score)</div>
+      <div class="card-body">
+        {{ chart('ch-trend', 'line', p.trend|map(attribute='week')|list, [{'label': 'Average score', 'data': p.trend|map(attribute='avg')|list, 'series': 0}], {'percent': True, 'aria': 'Average score per week for the last 8 weeks'}) }}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4 mb-4">
+  <div class="col-xl-5">
+    <div class="card h-100">
+      <div class="card-header fw-semibold">Progress by category</div>
+      <div class="table-responsive"><table class="table table-sm align-middle mb-0">
+        <thead class="table-light"><tr><th>Category</th><th class="text-center">Exam 1</th><th class="text-center">Exam 2</th><th class="text-center">Exam 3</th><th class="text-end">Improvement</th></tr></thead>
+        <tbody>{% for r in p.categories %}
+          <tr><td class="small fw-semibold">{{ r.name }}</td><td class="text-center">{{ pct_badge(r.exam1) }}</td><td class="text-center">{{ pct_badge(r.exam2) }}</td><td class="text-center">{{ pct_badge(r.exam3) }}</td>
+            <td class="text-end small">{% if r.improvement is not none %}<span class="{{ 'text-success' if r.improvement >= 0 else 'text-danger' }} fw-semibold"><i class="bi bi-arrow-{{ 'up' if r.improvement >= 0 else 'down' }}"></i> {{ '%+.0f'|format(r.improvement) }} pts</span>{% else %}—{% endif %}</td></tr>
+        {% endfor %}</tbody>
+      </table></div>
+    </div>
+  </div>
+  <div class="col-xl-7">
+    <div class="card h-100">
+      <div class="card-header fw-semibold">Progress by course</div>
+      <div class="table-responsive"><table class="table table-sm align-middle mb-0">
+        <thead class="table-light"><tr><th>Course</th><th class="text-end">Correct</th><th class="text-end">Incorrect</th><th class="text-end">Improvement</th><th class="text-end">Time (min)</th></tr></thead>
+        <tbody>{% for r in p.courses %}
+          <tr><td class="small fw-semibold">{{ r.name }}<div class="text-muted fw-normal">{{ r.answered }} answered</div></td>
+            <td class="text-end">{{ pct_badge(r.correct_pct) }}</td>
+            <td class="text-end small">{{ ('%.0f%%'|format(r.incorrect_pct)) if r.incorrect_pct is not none else '—' }}</td>
+            <td class="text-end small">{% if r.improvement is not none %}<span class="{{ 'text-success' if r.improvement >= 0 else 'text-danger' }}">{{ '%+.0f'|format(r.improvement) }} pts</span>{% else %}—{% endif %}</td>
+            <td class="text-end small">{{ r.minutes }}</td></tr>
+        {% endfor %}</tbody>
+      </table></div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-md-6 col-xl-4">
+    <div class="card h-100"><div class="card-header fw-semibold text-success-emphasis"><i class="bi bi-hand-thumbs-up"></i> Strengths</div>
+      <ul class="list-group list-group-flush small">{% for s in p.strengths %}<li class="list-group-item d-flex justify-content-between"><span>{{ s.name }}</span>{{ pct_badge(s.pct) }}</li>
+        {% else %}<li class="list-group-item text-muted">Answer at least 3 questions in a topic to see strengths.</li>{% endfor %}</ul></div>
+  </div>
+  <div class="col-md-6 col-xl-4">
+    <div class="card h-100"><div class="card-header fw-semibold text-danger-emphasis"><i class="bi bi-bullseye"></i> Areas to improve</div>
+      <ul class="list-group list-group-flush small">{% for s in p.weaknesses %}<li class="list-group-item d-flex justify-content-between"><span>{{ s.name }}</span>{{ pct_badge(s.pct) }}</li>
+        {% else %}<li class="list-group-item text-muted">No weak topics detected yet.</li>{% endfor %}</ul></div>
+  </div>
+  <div class="col-xl-4">
+    <div class="card h-100"><div class="card-header fw-semibold"><i class="bi bi-magic"></i> Recommended next</div>
+      <ul class="list-group list-group-flush small">
+        {% for item in plan %}
+        <li class="list-group-item"><div class="d-flex justify-content-between"><span class="fw-semibold">{{ item.topic.name }}</span>
+          {% if item.mastery is not none %}{{ pct_badge(item.mastery) }}{% else %}<span class="badge text-bg-secondary">new</span>{% endif %}</div>
+          {% for r in item.resources[:2] %}<div><a href="/r/{{ r.id }}?rec=1" target="_blank" rel="noopener"><i class="bi bi-box-arrow-up-right"></i> {{ r.title }}</a></div>{% endfor %}
+        </li>
+        {% else %}<li class="list-group-item text-muted">Take a quiz to get recommendations.</li>{% endfor %}
+      </ul>
+      {% if current_user.id == student.id %}<div class="card-body pt-2"><a class="btn btn-sm btn-primary" href="/study-plan">Open Study Plan</a></div>{% endif %}
+    </div>
+  </div>
+</div>

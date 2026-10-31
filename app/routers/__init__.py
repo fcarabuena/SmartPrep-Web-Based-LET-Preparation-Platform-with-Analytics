@@ -1,6 +1,7 @@
 from app.routers import (
     admin_settings,
     admin_users,
+    analytics,
     assessments_admin,
     auth,
     content,
@@ -26,4 +27,5 @@ ROUTERS = [
     exams.router,
     practice.router,
     gamification.router,
+    analytics.router,
 ]

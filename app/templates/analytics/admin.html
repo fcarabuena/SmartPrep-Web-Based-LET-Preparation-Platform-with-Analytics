@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% from "partials/charts.html" import chart, chart_scripts %}
+{% from "partials/macros.html" import stat, empty with context %}
+{% block title %}System Analytics{% endblock %}
+{% block page_title %}System Analytics{% endblock %}
+{% block content %}
+{% include "analytics/_admin_body.html" %}
+{% endblock %}
+{% block scripts %}{{ chart_scripts() }}{% endblock %}

@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import empty with context %}
+{% block title %}At-Risk Students{% endblock %}
+{% block page_title %}At-Risk Students{% endblock %}
+{% block content %}
+<h1 class="h4 fw-bold mb-1">At-risk students <span class="badge text-bg-danger">{{ rows|length }}</span></h1>
+<p class="text-muted small">Flagged when LET readiness is below {{ min_ready|int }}% or there has been no activity for {{ inactive_days }}+ days. Rules can be changed in system settings.</p>
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light"><tr><th>Student</th><th class="d-none d-md-table-cell">Major</th><th>Readiness</th><th class="d-none d-sm-table-cell">Inactive</th><th>Why flagged</th><th></th></tr></thead>
+      <tbody>
+      {% for r in rows %}
+      <tr>
+        <td><div class="fw-semibold">{{ r.user.full_name }}</div><div class="small text-muted">{{ r.user.email }}</div></td>
+        <td class="d-none d-md-table-cell small">{{ r.user.major_label }}</td>
+        <td><span class="fw-semibold">{{ '%.0f'|format(r.readiness) }}%</span> <span class="small text-muted">{{ r.band }}</span></td>
+        <td class="d-none d-sm-table-cell small">{{ r.idle_days }} day{{ 's' if r.idle_days != 1 }}</td>
+        <td class="small">{% for reason in r.reasons %}<span class="badge text-bg-light border me-1"><i class="bi bi-exclamation-triangle text-danger"></i> {{ reason }}</span>{% endfor %}</td>
+        <td class="text-end"><a class="btn btn-sm btn-outline-primary" href="/analytics/students/{{ r.user.id }}">Open &amp; send feedback</a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6">{{ empty('No students are currently at risk.', 'emoji-smile') }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% from "partials/charts.html" import chart_scripts %}
+{% from "partials/macros.html" import pct_badge with context %}
+{% block title %}{{ student.full_name }}{% endblock %}
+{% block page_title %}Student Drill-down{% endblock %}
+{% block content %}
+<a href="/analytics/students" class="small"><i class="bi bi-arrow-left"></i> All students</a>
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-2 mb-3">
+  <div class="d-flex align-items-center gap-3">
+    <span class="avatar" style="width:48px;height:48px">{{ student.initials }}</span>
+    <div><h1 class="h4 fw-bold mb-0">{{ student.full_name }}</h1>
+      <div class="small text-muted">{{ student.email }} · {{ student.major_label }} · last seen {{ student.last_seen_at|ago }}</div></div>
+  </div>
+  <button class="btn btn-primary" data-bs-toggle="collapse" data-bs-target="#feedback"><i class="bi bi-chat-left-text"></i> Send feedback</button>
+</div>
+<div class="collapse mb-4" id="feedback">
+  <form class="card card-body" method="post" action="/analytics/students/{{ student.id }}/feedback">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="mb-2"><label class="form-label" for="subject">Subject</label><input class="form-control" id="subject" name="subject" value="Feedback on your LET review" maxlength="255"></div>
+    <div class="mb-2"><label class="form-label" for="body">Message</label><textarea class="form-control" id="body" name="body" rows="4" required placeholder="Encouragement, specific topics to review, study tips…"></textarea></div>
+    <div><button class="btn btn-primary" type="submit"><i class="bi bi-send"></i> Send to inbox</button> <span class="small text-muted">The student is notified immediately.</span></div>
+  </form>
+</div>
+{% include "analytics/_progress_body.html" %}
+<div class="card mt-4">
+  <div class="card-header fw-semibold">Recent submissions</div>
+  <div class="table-responsive"><table class="table table-sm align-middle mb-0">
+    <thead class="table-light"><tr><th>Assessment</th><th>Attempt</th><th>Score</th><th>Result</th><th>Submitted</th><th></th></tr></thead>
+    <tbody>{% for at in recent %}
+      <tr><td class="small">{{ at.display_title }}</td><td>#{{ at.attempt_no }}</td><td>{{ pct_badge(at.score_pct) }}</td>
+        <td>{{ 'Passed' if at.passed else 'Failed' }}</td><td class="small">{{ at.submitted_at|dt }}</td>
+        <td><a class="btn btn-sm btn-outline-primary" href="/attempts/{{ at.id }}/result">View</a></td></tr>
+    {% else %}<tr><td colspan="6" class="text-muted small p-3">No submissions yet.</td></tr>{% endfor %}</tbody>
+  </table></div>
+</div>
+{% endblock %}
+{% block scripts %}{{ chart_scripts() }}{% endblock %}

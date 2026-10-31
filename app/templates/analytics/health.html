@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% from "partials/charts.html" import chart, chart_scripts %}
+{% from "partials/macros.html" import stat with context %}
+{% block title %}System Health{% endblock %}
+{% block page_title %}System Health{% endblock %}
+{% block content %}
+<div class="row g-3 mb-4">
+  <div class="col-6 col-xl-3">{{ stat('Uptime', h.uptime_seconds|duration, 'clock-history', 'success', 'since last restart / wake') }}</div>
+  <div class="col-6 col-xl-3">{{ stat('Requests', h.requests.get('total', 0), 'arrow-left-right', 'primary', (h.requests.get('5xx', 0)) ~ ' server errors · ' ~ h.requests.get('4xx', 0) ~ ' client errors') }}</div>
+  <div class="col-6 col-xl-3">{{ stat('Errors (24h)', h.errors_24h, 'bug', 'danger') }}</div>
+  <div class="col-6 col-xl-3">{{ stat('Database size', ('%.1f MB'|format(h.db_size / 1048576)) if h.db_size else '—', 'database', 'info', h.dialect ~ (' · Neon free: 1 GB' if h.dialect == 'postgresql' else '')) }}</div>
+</div>
+<div class="row g-4 mb-4">
+  <div class="col-xl-8">
+    <div class="card h-100"><div class="card-header fw-semibold">Page views per day (14 days)</div><div class="card-body">
+      {{ chart('ch-req', 'bar', h.requests_per_day|map(attribute='day')|list, [{'label': 'Page views', 'data': h.requests_per_day|map(attribute='n')|list, 'series': 0}], {'integer': True, 'aria': 'Page views per day'}) }}
+    </div></div>
+  </div>
+  <div class="col-xl-4">
+    <div class="card h-100"><div class="card-header fw-semibold">Table sizes</div>
+      <ul class="list-group list-group-flush small">{% for name, n in h.tables.items() %}
+        <li class="list-group-item d-flex justify-content-between"><code>{{ name }}</code><span>{{ n }} rows</span></li>{% endfor %}</ul>
+    </div>
+  </div>
+</div>
+<div class="card">
+  <div class="card-header fw-semibold">Recent errors</div>
+  <div class="table-responsive"><table class="table table-sm align-middle mb-0">
+    <thead class="table-light"><tr><th>When</th><th>Request</th><th>Error</th></tr></thead>
+    <tbody>{% for e in h.errors %}
+      <tr><td class="small text-nowrap">{{ e.created_at|dt }}</td><td class="small"><code>{{ e.method }} {{ e.path }}</code></td>
+        <td class="small"><details><summary>{{ e.error.strip().split('\n')[-1]|truncate(100) }}</summary><pre class="small mb-0" style="white-space: pre-wrap">{{ e.error }}</pre></details></td></tr>
+    {% else %}<tr><td colspan="3" class="text-muted small p-3">No errors recorded. 🎉</td></tr>{% endfor %}</tbody>
+  </table></div>
+</div>
+{% endblock %}
+{% block scripts %}{{ chart_scripts() }}{% endblock %}
