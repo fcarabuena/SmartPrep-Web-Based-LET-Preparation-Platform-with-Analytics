@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import topic_select with context %}
+{% block title %}Import Questions{% endblock %}
+{% block page_title %}Import Questions{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-5">
+    <div class="card">
+      <div class="card-header fw-semibold"><i class="bi bi-file-earmark-spreadsheet"></i> CSV / Excel import</div>
+      <div class="card-body">
+        <ol class="small ps-3">
+          <li>Download a template: <a href="/questions/import/template.csv">CSV</a> · <a href="/questions/import/template.xlsx">Excel</a> (includes a topic reference sheet).</li>
+          <li>Fill one question per row. Identify the topic with <code>topic_id</code> <em>or</em> <code>course</code> + <code>topic</code> names, or choose a default topic below.</li>
+          <li><code>correct</code> is A, B, C or D; <code>difficulty</code> is easy, medium or hard.</li>
+          <li>Upload, review the preview and row-level errors, then confirm.</li>
+        </ol>
+        <form method="post" action="/questions/import" enctype="multipart/form-data">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <div class="mb-3"><label class="form-label" for="file">File (.csv or .xlsx, max 5 MB)</label>
+            <input class="form-control" type="file" id="file" name="file" accept=".csv,.xlsx" required></div>
+          <div class="mb-3"><label class="form-label" for="default_topic">Default topic <span class="text-muted small">(for rows without a topic)</span></label>
+            {{ topic_select('default_topic', topic_groups, default_topic or 0, placeholder='None') }}</div>
+          <div class="mb-3"><label class="form-label" for="status">Save imported items as</label>
+            <select class="form-select" id="status" name="status">
+              <option value="pending_review" {% if status == 'pending_review' %}selected{% endif %}>Pending review (recommended)</option>
+              <option value="draft" {% if status == 'draft' %}selected{% endif %}>Draft</option>
+              <option value="approved" {% if status == 'approved' %}selected{% endif %}>Approved</option>
+            </select></div>
+          <button class="btn btn-primary" type="submit"><i class="bi bi-eye"></i> Upload &amp; preview</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-7">
+    {% if checked %}
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span class="fw-semibold">Preview: {{ filename }}</span>
+        <span class="small"><span class="text-success fw-semibold">{{ valid_count }} valid</span> · <span class="text-danger fw-semibold">{{ checked|length - valid_count }} with errors</span></span>
+      </div>
+      <div class="table-responsive" style="max-height: 60vh">
+        <table class="table table-sm align-middle mb-0">
+          <thead class="table-light sticky-top"><tr><th>Row</th><th>Question</th><th>Key</th><th>Status</th></tr></thead>
+          <tbody>
+          {% for r in checked %}
+            <tr class="{% if r.errors %}table-danger{% endif %}">
+              <td>{{ r.row }}</td>
+              <td class="small">{{ r.data.stem|truncate(120) }}</td>
+              <td>{{ r.data.correct }}</td>
+              <td class="small">{% if r.errors %}<ul class="mb-0 ps-3 text-danger">{% for e in r.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% else %}<span class="text-success"><i class="bi bi-check-circle"></i> OK</span>{% endif %}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="card-footer">
+        {% if valid_count %}
+        <form method="post" action="/questions/import/confirm">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <input type="hidden" name="payload" value="{{ payload }}">
+          <input type="hidden" name="status" value="{{ status }}">
+          <button class="btn btn-success"><i class="bi bi-check2-all"></i> Import {{ valid_count }} valid question(s)</button>
+          <span class="small text-muted ms-2">Rows with errors will be skipped.</span>
+        </form>
+        {% else %}<span class="text-danger small">No valid rows to import. Fix the errors and upload again.</span>{% endif %}
+      </div>
+    </div>
+    {% else %}
+    <div class="card"><div class="card-body text-muted small">
+      <p class="mb-2"><strong>Columns:</strong> course, topic, stem, choice_a, choice_b, choice_c, choice_d, correct, rationalization, difficulty, competency, source_url, topic_id</p>
+      <p class="mb-0">Duplicate stems (already in the bank or repeated in the file) are flagged and skipped automatically.</p>
+    </div></div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

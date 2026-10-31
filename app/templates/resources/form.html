@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import topic_select with context %}
+{% block title %}{{ 'Edit' if resource else 'New' }} resource{% endblock %}
+{% block page_title %}Learning Resources{% endblock %}
+{% block content %}
+<a href="/resources" class="small"><i class="bi bi-arrow-left"></i> Back to resources</a>
+<div class="row justify-content-center mt-1">
+  <div class="col-xl-8">
+    <div class="card">
+      <div class="card-header fw-semibold">{{ 'Edit resource' if resource else 'Add a learning resource' }}</div>
+      <div class="card-body">
+        <form method="post" enctype="multipart/form-data">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <div class="row g-3">
+            <div class="col-12"><label class="form-label" for="title">Title</label>
+              <input class="form-control" id="title" name="title" value="{{ form.title or '' }}" maxlength="255" required></div>
+            <div class="col-md-4"><label class="form-label" for="kind">Type</label>
+              <select class="form-select" id="kind" name="kind">{% for k in kinds %}<option value="{{ k }}" {% if form.kind == k %}selected{% endif %}>{{ k|capitalize }}</option>{% endfor %}</select></div>
+            <div class="col-md-4"><label class="form-label" for="level">Level</label>
+              <select class="form-select" id="level" name="level">{% for l in levels %}<option value="{{ l }}" {% if form.level == l %}selected{% endif %}>{{ l|capitalize }}</option>{% endfor %}</select>
+              <div class="form-text">Foundational = for mastery &lt;75%, advanced = ≥85%.</div></div>
+            <div class="col-md-4"><label class="form-label" for="topic_id">Topic</label>
+              {{ topic_select('topic_id', topic_groups, form.topic_id, placeholder='General (no topic)') }}</div>
+            <div class="col-12"><label class="form-label" for="url">URL <span class="text-muted small">(videos, articles, links)</span></label>
+              <input class="form-control" id="url" name="url" value="{{ form.url or '' }}" placeholder="https://" maxlength="1000"></div>
+            <div class="col-12"><label class="form-label" for="file">Upload file <span class="text-muted small">(PDF, DOCX, PPTX or image · max 5 MB · stored in the database)</span></label>
+              <input class="form-control" type="file" id="file" name="file" accept=".pdf,.docx,.pptx,.png,.jpg,.jpeg,.gif,.webp">
+              {% if resource and resource.file %}<div class="form-text">Current file: <a href="/files/{{ resource.file.id }}" target="_blank">{{ resource.file.filename }}</a> ({{ (resource.file.size / 1024)|round|int }} KB). Uploading replaces it.</div>{% endif %}</div>
+            <div class="col-12"><label class="form-label" for="description">Description</label>
+              <textarea class="form-control" id="description" name="description" rows="3">{{ form.description or '' }}</textarea></div>
+            <div class="col-12"><div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" id="approved" name="approved" value="true" {% if form.approved %}checked{% endif %}>
+              <label class="form-check-label" for="approved">Approved (visible to students)</label></div></div>
+          </div>
+          <button class="btn btn-primary mt-4" type="submit">Save resource</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

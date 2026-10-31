@@ -13,7 +13,7 @@ psycopg 3 · PostgreSQL (Neon) / SQLite (local) · pytest
 | Phase | Scope | Status |
 |---|---|---|
 | 1 | Foundation: models, migrations, auth (register/verify/login/reset/2FA/Google), roles, layout, admin users | ✅ |
-| 2 | Content: categories/courses/topics, question bank, review queue, import, resources | ⏳ |
+| 2 | Content: categories/courses/topics, question bank, review queue, import, resources | ✅ |
 | 3 | Assessments: exams/quizzes, timer, results, grades | ⏳ |
 | 4 | Recommendations, adaptive practice, study plan, gamification | ⏳ |
 | 5 | Analytics & reports | ⏳ |
@@ -33,7 +33,7 @@ py -3.12 -m venv .venv
 pip install -r requirements.txt
 copy .env.example .env          # optional; defaults work for local SQLite
 alembic upgrade head            # creates smartprep.db (SQLite) when DATABASE_URL is empty
-python scripts\seed.py          # categories, courses, topics
+python scripts\seed.py          # categories/courses/topics, 100 sample questions, resources, badges
 python scripts\create_admin.py --email admin@example.com --name "Site Admin"
 uvicorn app.main:app --reload
 ```
@@ -51,6 +51,20 @@ or call tools directly: `.venv\Scripts\python -m uvicorn app.main:app --reload`.
 ```
 
 Tests use an in-memory SQLite database and never touch the network.
+
+## Features by module
+
+### Content (Phase 2)
+- **Categories › Courses › Topics** (`/content/categories`): General Education, Professional Education and
+  Specialization (Major Core). Major courses are only visible to students of that major.
+- **Question bank** (`/questions`): search, filters (category, topic, difficulty, status, source), bulk actions,
+  live duplicate detection (normalized stem hash + similar-stem search). Students only ever see **approved** items.
+- **Review queue** (`/questions/review`): approve/reject pending items (scraped, AI-generated and imported).
+- **CSV/Excel import** (`/questions/import`): downloadable templates, preview with row-level errors, duplicate
+  skipping, server-side re-validation on confirm.
+- **Resources** (`/resources`): links, videos, articles and small uploads (PDF/DOCX/PPTX/images, max 5 MB, type and
+  content checked) stored in the database. Students browse and search them at `/materials`; every open is tracked.
+- **Seed content**: 100 original LET-style questions (10 per sample topic, each with a rationalization).
 
 ## Configuration
 

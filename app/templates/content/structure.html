@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import confirm_post with context %}
+{% block title %}Categories & Topics{% endblock %}
+{% block page_title %}Content Structure{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <div>
+    <h1 class="h4 fw-bold mb-0">Categories, Courses &amp; Topics</h1>
+    <p class="text-muted small mb-0">LET content is organized as Category › Course › Topic › Questions.</p>
+  </div>
+  {% if current_user.role == 'admin' %}
+  <button class="btn btn-outline-primary" data-bs-toggle="collapse" data-bs-target="#newCat"><i class="bi bi-plus-lg"></i> Category</button>
+  {% endif %}
+</div>
+{% if current_user.role == 'admin' %}
+<div class="collapse mb-3" id="newCat">
+  <form class="card card-body row g-2 flex-row" method="post" action="/content/categories">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="col-md-4"><label class="form-label small" for="nc-name">Name</label><input class="form-control" id="nc-name" name="name" required></div>
+    <div class="col-md-3"><label class="form-label small" for="nc-code">Code</label><input class="form-control" id="nc-code" name="code" placeholder="e.g. electives" required></div>
+    <div class="col-md-3"><label class="form-label small" for="nc-desc">Description</label><input class="form-control" id="nc-desc" name="description"></div>
+    <div class="col-md-2 d-grid align-items-end"><button class="btn btn-primary mt-md-4">Add</button></div>
+  </form>
+</div>
+{% endif %}
+
+<div class="accordion" id="tree">
+{% for cat in tree %}
+  <div class="accordion-item mb-3 border rounded-3 overflow-hidden">
+    <h2 class="accordion-header">
+      <button class="accordion-button {% if not loop.first %}collapsed{% endif %} fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#cat{{ cat.id }}">
+        <i class="bi bi-folder2-open me-2 text-primary"></i>{{ cat.name }}
+        <span class="badge text-bg-light border ms-2">{{ cat.courses|length }} courses</span>
+      </button>
+    </h2>
+    <div id="cat{{ cat.id }}" class="accordion-collapse collapse {% if loop.first %}show{% endif %}">
+      <div class="accordion-body">
+        {% if current_user.role == 'admin' %}
+        <form class="row g-2 mb-3 small" method="post" action="/content/categories/{{ cat.id }}/edit">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <div class="col-md-4"><input class="form-control form-control-sm" name="name" value="{{ cat.name }}" aria-label="Category name"></div>
+          <div class="col-md-5"><input class="form-control form-control-sm" name="description" value="{{ cat.description or '' }}" aria-label="Description"></div>
+          <div class="col-md-1"><input class="form-control form-control-sm" type="number" name="sort_order" value="{{ cat.sort_order }}" aria-label="Order"></div>
+          <div class="col-md-2 text-nowrap"><button class="btn btn-sm btn-outline-primary">Save</button></div>
+        </form>
+        {% endif %}
+        {% for course in cat.courses %}
+        <div class="border rounded-3 p-3 mb-3 bg-white">
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div>
+              <span class="fw-semibold"><i class="bi bi-journal-bookmark me-1"></i>{{ course.name }}</span>
+              {% if course.major %}<span class="badge text-bg-info-subtle text-info-emphasis ms-1">{{ majors[course.major] }} majors</span>{% endif %}
+            </div>
+            <div class="text-nowrap">
+              <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="collapse" data-bs-target="#editCourse{{ course.id }}"><i class="bi bi-pencil"></i> Edit</button>
+              {% if current_user.role == 'admin' %}{{ confirm_post('/content/courses/%d/delete'|format(course.id), 'Delete', 'btn-outline-danger', 'Delete this course, its topics and their questions?', 'trash') }}{% endif %}
+            </div>
+          </div>
+          <form class="collapse row g-2 mt-2" id="editCourse{{ course.id }}" method="post" action="/content/courses/{{ course.id }}/edit">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <div class="col-md-4"><input class="form-control form-control-sm" name="name" value="{{ course.name }}" aria-label="Course name" required></div>
+            <div class="col-md-3"><select class="form-select form-select-sm" name="major" aria-label="Major">
+              <option value="">All students</option>{% for code, label in majors.items() %}<option value="{{ code }}" {% if course.major == code %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+            <div class="col-md-3"><input class="form-control form-control-sm" name="description" value="{{ course.description or '' }}" placeholder="Description" aria-label="Description"></div>
+            <div class="col-md-1"><input class="form-control form-control-sm" type="number" name="sort_order" value="{{ course.sort_order }}" aria-label="Order"></div>
+            <div class="col-md-1"><button class="btn btn-sm btn-primary w-100">Save</button></div>
+          </form>
+          <div class="table-responsive mt-2">
+            <table class="table table-sm align-middle mb-0">
+              <thead><tr><th>Topic</th><th class="text-center">Questions</th><th class="text-center">Approved</th><th class="text-end">Actions</th></tr></thead>
+              <tbody>
+              {% for t in course.topics %}
+                <tr>
+                  <td>
+                    <span>{{ t.name }}</span>
+                    <form class="collapse mt-2 row g-1" id="editTopic{{ t.id }}" method="post" action="/content/topics/{{ t.id }}/edit">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                      <div class="col-6"><input class="form-control form-control-sm" name="name" value="{{ t.name }}" aria-label="Topic name" required></div>
+                      <div class="col-4"><input class="form-control form-control-sm" name="description" value="{{ t.description or '' }}" placeholder="Description" aria-label="Description"></div>
+                      <div class="col-1"><input class="form-control form-control-sm" type="number" name="sort_order" value="{{ t.sort_order }}" aria-label="Order"></div>
+                      <div class="col-1"><button class="btn btn-sm btn-primary">Save</button></div>
+                    </form>
+                  </td>
+                  <td class="text-center"><a href="/questions?topic={{ t.id }}">{{ counts.get(t.id, 0) }}</a></td>
+                  <td class="text-center">{{ approved.get(t.id, 0) }}</td>
+                  <td class="text-end text-nowrap">
+                    <a class="btn btn-sm btn-outline-primary" href="/questions/new?topic={{ t.id }}" title="Add question"><i class="bi bi-plus"></i><span class="visually-hidden">Add question</span></a>
+                    <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="collapse" data-bs-target="#editTopic{{ t.id }}" aria-label="Edit topic"><i class="bi bi-pencil"></i></button>
+                    {{ confirm_post('/content/topics/%d/delete'|format(t.id), '', 'btn-outline-danger', 'Delete this topic?', 'trash') }}
+                  </td>
+                </tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <form class="row g-2 mt-2" method="post" action="/content/topics">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="course_id" value="{{ course.id }}">
+            <div class="col"><input class="form-control form-control-sm" name="name" placeholder="New topic name" aria-label="New topic name" required></div>
+            <div class="col-auto"><button class="btn btn-sm btn-outline-primary"><i class="bi bi-plus-lg"></i> Add topic</button></div>
+          </form>
+        </div>
+        {% endfor %}
+        <form class="row g-2" method="post" action="/content/courses">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <input type="hidden" name="category_id" value="{{ cat.id }}">
+          <div class="col-md-5"><input class="form-control" name="name" placeholder="New course name" aria-label="New course name" required></div>
+          <div class="col-md-4"><select class="form-select" name="major" aria-label="Major restriction"><option value="">Visible to all students</option>
+            {% for code, label in majors.items() %}<option value="{{ code }}">{{ label }} only</option>{% endfor %}</select></div>
+          <div class="col-md-3 d-grid"><button class="btn btn-outline-primary"><i class="bi bi-plus-lg"></i> Add course</button></div>
+        </form>
+      </div>
+    </div>
+  </div>
+{% endfor %}
+</div>
+{% endblock %}

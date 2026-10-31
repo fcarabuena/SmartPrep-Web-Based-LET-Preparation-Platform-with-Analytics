@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import pager, empty, topic_select, confirm_post, kind_icon with context %}
+{% block title %}Resources{% endblock %}
+{% block page_title %}Learning Resources{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h1 class="h4 fw-bold mb-0">Resources <span class="text-muted fs-6">({{ total }})</span></h1>
+  <a href="/resources/new" class="btn btn-primary"><i class="bi bi-plus-lg"></i> New resource</a>
+</div>
+<form class="card card-body mb-3" method="get">
+  <div class="row g-2">
+    <div class="col-lg-4"><label class="visually-hidden" for="q">Search</label><input class="form-control" id="q" name="q" value="{{ filters.q }}" placeholder="Search title, topic or course"></div>
+    <div class="col-6 col-lg-3"><label class="visually-hidden" for="topic">Topic</label>{{ topic_select('topic', topic_groups, filters.topic, placeholder='All topics') }}</div>
+    <div class="col-6 col-lg-2"><label class="visually-hidden" for="kind">Type</label><select class="form-select" id="kind" name="kind"><option value="">All types</option>
+      {% for k in kinds %}<option value="{{ k }}" {% if filters.kind == k %}selected{% endif %}>{{ k|capitalize }}</option>{% endfor %}</select></div>
+    <div class="col-6 col-lg-1"><label class="visually-hidden" for="level">Level</label><select class="form-select" id="level" name="level"><option value="">Level</option>
+      {% for l in levels %}<option value="{{ l }}" {% if filters.level == l %}selected{% endif %}>{{ l|capitalize }}</option>{% endfor %}</select></div>
+    <div class="col-6 col-lg-1"><label class="visually-hidden" for="approved">Approved</label><select class="form-select" id="approved" name="approved"><option value="">Any</option>
+      <option value="yes" {% if filters.approved == 'yes' %}selected{% endif %}>Approved</option><option value="no" {% if filters.approved == 'no' %}selected{% endif %}>Hidden</option></select></div>
+    <div class="col-lg-1 d-grid"><button class="btn btn-outline-primary"><i class="bi bi-funnel"></i></button></div>
+  </div>
+</form>
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light"><tr><th>Resource</th><th class="d-none d-md-table-cell">Topic</th><th>Level</th><th class="text-center">Views</th><th>Status</th><th class="text-end">Actions</th></tr></thead>
+      <tbody>
+      {% for r in items %}
+      <tr>
+        <td><i class="bi bi-{{ kind_icon(r.kind) }} text-primary me-1"></i><a href="/r/{{ r.id }}" target="_blank" rel="noopener" class="fw-semibold">{{ r.title }}</a>
+          <div class="small text-muted">{{ r.kind|capitalize }}{% if r.source_type != 'manual' %} · {{ r.source_type }}{% endif %}</div></td>
+        <td class="d-none d-md-table-cell small">{% if r.topic %}{{ r.topic.course.name }} › {{ r.topic.name }}{% else %}<span class="text-muted">General</span>{% endif %}</td>
+        <td><span class="badge text-bg-light border">{{ r.level }}</span></td>
+        <td class="text-center">{{ r.view_count }}</td>
+        <td>{% if r.approved %}<span class="badge text-bg-success">Approved</span>{% else %}<span class="badge text-bg-secondary">Hidden</span>{% endif %}</td>
+        <td class="text-end text-nowrap">
+          <a class="btn btn-sm btn-outline-primary" href="/resources/{{ r.id }}/edit" aria-label="Edit"><i class="bi bi-pencil"></i></a>
+          {{ confirm_post('/resources/%d/toggle'|format(r.id), 'Hide' if r.approved else 'Approve', 'btn-outline-secondary', 'Change visibility for students?') }}
+          {{ confirm_post('/resources/%d/delete'|format(r.id), '', 'btn-outline-danger', 'Delete this resource?', 'trash') }}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6">{{ empty('No resources yet.', 'collection') }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{{ pager(page, pages, '/resources?' ~ qs ~ '&') }}
+{% endblock %}

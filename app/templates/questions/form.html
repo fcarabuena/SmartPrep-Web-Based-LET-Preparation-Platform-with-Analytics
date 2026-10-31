@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import topic_select, status_badge with context %}
+{% block title %}{{ 'Edit' if question else 'New' }} question{% endblock %}
+{% block page_title %}Question Bank{% endblock %}
+{% block content %}
+<a href="/questions" class="small"><i class="bi bi-arrow-left"></i> Back to question bank</a>
+<div class="row g-4 mt-1">
+  <div class="col-xl-8">
+    <div class="card">
+      <div class="card-header fw-semibold">{{ 'Edit question #%d'|format(question.id) if question else 'New question' }}
+        {% if question %}<span class="ms-2">{{ status_badge(question.status) }}</span> <span class="badge text-bg-light border">{{ question.source_type|replace('_',' ') }}</span>{% endif %}
+      </div>
+      <div class="card-body">
+        <form method="post" id="questionForm" data-exclude="{{ question.id if question else 0 }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <div class="row g-3">
+            <div class="col-md-8">
+              <label class="form-label" for="topic_id">Topic</label>
+              {{ topic_select('topic_id', topic_groups, form.topic_id, required=True) }}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label" for="difficulty">Difficulty</label>
+              <select class="form-select" id="difficulty" name="difficulty">
+                {% for d in difficulties %}<option value="{{ d }}" {% if form.difficulty == d %}selected{% endif %}>{{ d|capitalize }}</option>{% endfor %}
+              </select>
+            </div>
+            <div class="col-12">
+              <label class="form-label" for="stem">Question</label>
+              <textarea class="form-control" id="stem" name="stem" rows="4" required maxlength="5000">{{ form.stem or '' }}</textarea>
+              <div id="dupHint" class="small mt-1"></div>
+            </div>
+            {% for k in 'abcd' %}
+            <div class="col-md-6">
+              <label class="form-label" for="choice_{{ k }}">Choice {{ k|upper }}</label>
+              <div class="input-group">
+                <div class="input-group-text">
+                  <input class="form-check-input mt-0" type="radio" name="correct" value="{{ k|upper }}" aria-label="Mark {{ k|upper }} correct" {% if (form.correct or 'A') == k|upper %}checked{% endif %}>
+                </div>
+                <input class="form-control" id="choice_{{ k }}" name="choice_{{ k }}" value="{{ form['choice_' ~ k] or '' }}" required>
+              </div>
+            </div>
+            {% endfor %}
+            <div class="col-12 small text-muted mt-0">Select the radio button beside the correct answer.</div>
+            <div class="col-12">
+              <label class="form-label" for="rationalization">Rationalization</label>
+              <textarea class="form-control" id="rationalization" name="rationalization" rows="4" placeholder="Explain why the answer is correct and why each other option is wrong.">{{ form.rationalization or '' }}</textarea>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="competency">Competency tag</label>
+              <input class="form-control" id="competency" name="competency" value="{{ form.competency or '' }}" maxlength="255" placeholder="e.g. Apply principles of test construction">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="source_url">Source URL <span class="text-muted small">(optional)</span></label>
+              <input class="form-control" id="source_url" name="source_url" value="{{ form.source_url or '' }}" maxlength="1000">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="status">Status</label>
+              <select class="form-select" id="status" name="status">
+                {% for s in statuses %}<option value="{{ s }}" {% if form.status == s %}selected{% endif %}>{{ s|replace('_',' ')|capitalize }}</option>{% endfor %}
+              </select>
+              <div class="form-text">Students only see <strong>approved</strong> questions.</div>
+            </div>
+          </div>
+          {% if duplicates %}
+          <div class="alert alert-warning mt-3">
+            <div class="fw-semibold mb-1"><i class="bi bi-exclamation-triangle"></i> Possible duplicates</div>
+            <ul class="mb-2 small">{% for d in duplicates %}<li><a href="/questions/{{ d.id }}" target="_blank">#{{ d.id }}</a> {{ d.stem|truncate(140) }}</li>{% endfor %}</ul>
+            {% if not question %}
+            <div class="form-check"><input class="form-check-input" type="checkbox" name="allow_similar" value="1" id="allow_similar">
+              <label class="form-check-label" for="allow_similar">Save anyway — my question is different</label></div>
+            {% endif %}
+          </div>
+          {% endif %}
+          <div class="d-flex flex-wrap gap-2 mt-4">
+            <button class="btn btn-primary" type="submit">Save question</button>
+            {% if not question %}<button class="btn btn-outline-primary" type="submit" name="save_and_new" value="1">Save &amp; add another</button>{% endif %}
+            <a href="/questions" class="btn btn-link">Cancel</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-xl-4">
+    <div class="card">
+      <div class="card-header fw-semibold"><i class="bi bi-lightbulb"></i> Writing good LET items</div>
+      <div class="card-body small">
+        <ul class="ps-3 mb-0">
+          <li>Write one clear problem in the stem; avoid negatives like “NOT” unless emphasized.</li>
+          <li>Make all options plausible and similar in length.</li>
+          <li>Avoid “all of the above” / “none of the above”.</li>
+          <li>Rationalize every option: why the key is right and why each distractor is wrong.</li>
+          <li>Write original items — do not copy from published reviewers.</li>
+        </ul>
+      </div>
+    </div>
+    {% if question %}
+    <div class="card mt-3">
+      <div class="card-body small">
+        <div><span class="text-muted">Created</span> {{ question.created_at|dt }} by {{ question.created_by.full_name if question.created_by else 'system' }}</div>
+        {% if question.reviewed_by %}<div><span class="text-muted">Reviewed</span> {{ question.reviewed_at|dt }} by {{ question.reviewed_by.full_name }}</div>{% endif %}
+        {% if question.review_note %}<div class="mt-1"><span class="text-muted">Review note:</span> {{ question.review_note }}</div>{% endif %}
+        <form method="post" action="/questions/{{ question.id }}/delete" class="mt-3" data-confirm="Delete this question permanently?">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i> Delete question</button>
+        </form>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}<script src="/static/js/questions.js"></script>{% endblock %}

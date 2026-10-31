@@ -45,7 +45,8 @@ class AppMiddleware(BaseHTTPMiddleware):
         h["X-Frame-Options"] = "DENY"
         h["Referrer-Policy"] = "strict-origin-when-cross-origin"
         h["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
-        h["Content-Security-Policy"] = CSP
+        if "content-security-policy" not in h:
+            h["Content-Security-Policy"] = CSP
         if settings.is_production:
             h["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
         ctype = h.get("content-type", "")

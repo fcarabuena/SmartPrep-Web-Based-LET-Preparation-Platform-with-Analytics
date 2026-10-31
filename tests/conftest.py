@@ -121,3 +121,25 @@ def faculty_client(client, faculty):
 def admin_client(client, admin):
     login(client, admin)
     return client
+
+
+@pytest.fixture
+def client_factory(db):
+    """Create extra independent clients, each logged in as the given (or a new) user."""
+    clients = []
+
+    def make(user: User | None = None, role: str = "student", **kw) -> TestClient:
+        c = TestClient(app)
+        c.__enter__()
+        clients.append(c)
+        login(c, user or make_user(db, role, **kw))
+        return c
+
+    yield make
+    for c in clients:
+        c.__exit__(None, None, None)
+
+
+@pytest.fixture
+def student_client_factory(client_factory):
+    return lambda user=None, **kw: client_factory(user, "student", **kw)

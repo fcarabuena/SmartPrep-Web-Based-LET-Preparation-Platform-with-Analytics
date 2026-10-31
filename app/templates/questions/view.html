@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import status_badge with context %}
+{% block title %}Question #{{ q.id }}{% endblock %}
+{% block page_title %}Question Bank{% endblock %}
+{% block content %}
+<a href="/questions" class="small"><i class="bi bi-arrow-left"></i> Back to question bank</a>
+<div class="row g-4 mt-1">
+  <div class="col-lg-8">
+    {% include "questions/_preview.html" %}
+  </div>
+  <div class="col-lg-4">
+    <div class="card">
+      <div class="card-body small">
+        <div class="mb-2">{{ status_badge(q.status) }} <span class="badge text-bg-light border">{{ q.difficulty|capitalize }}</span> <span class="badge text-bg-light border">{{ q.source_type|replace('_',' ') }}</span></div>
+        <div><span class="text-muted">Topic:</span> {{ q.topic.course.category.name }} › {{ q.topic.course.name }} › {{ q.topic.name }}</div>
+        {% if q.competency %}<div><span class="text-muted">Competency:</span> {{ q.competency }}</div>{% endif %}
+        {% if q.source_url %}<div class="text-break"><span class="text-muted">Source:</span> <a href="{{ q.source_url }}" target="_blank" rel="noopener noreferrer">{{ q.source_url }}</a></div>{% endif %}
+        <div><span class="text-muted">Created:</span> {{ q.created_at|dt }} by {{ q.created_by.full_name if q.created_by else 'system' }}</div>
+        {% if q.reviewed_by %}<div><span class="text-muted">Reviewed:</span> {{ q.reviewed_at|dt }} by {{ q.reviewed_by.full_name }}</div>{% endif %}
+        <hr>
+        <div><span class="text-muted">Times answered:</span> {{ answered }}</div>
+        <div><span class="text-muted">Correct rate:</span> {{ '%.0f%%'|format(100 * correct / answered) if answered else '—' }}</div>
+        <a href="/questions/{{ q.id }}/edit" class="btn btn-primary btn-sm mt-3"><i class="bi bi-pencil"></i> Edit</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import pager, status_badge, empty, topic_select with context %}
+{% block title %}Question Bank{% endblock %}
+{% block page_title %}Question Bank{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <div>
+    <h1 class="h4 fw-bold mb-0">LET Question Repository <span class="text-muted fs-6">({{ total }})</span></h1>
+    <div class="small text-muted">
+      {% for s in statuses %}<a class="me-2 text-decoration-none" href="/questions?status={{ s }}">{{ status_badge(s) }} {{ status_counts.get(s, 0) }}</a>{% endfor %}
+    </div>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="/questions/import" class="btn btn-outline-primary"><i class="bi bi-upload"></i> Import</a>
+    <a href="/questions/new" class="btn btn-primary"><i class="bi bi-plus-lg"></i> New question</a>
+  </div>
+</div>
+<form class="card card-body mb-3 filters" method="get">
+  <div class="row g-2">
+    <div class="col-lg-4"><label class="visually-hidden" for="q">Search</label>
+      <input class="form-control" id="q" name="q" value="{{ filters.q }}" placeholder="Search question text or competency"></div>
+    <div class="col-6 col-lg-2"><label class="visually-hidden" for="category">Category</label>
+      <select class="form-select" id="category" name="category"><option value="">All categories</option>
+      {% for c in categories %}<option value="{{ c.id }}" {% if filters.category == c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></div>
+    <div class="col-6 col-lg-3"><label class="visually-hidden" for="topic">Topic</label>{{ topic_select('topic', topic_groups, filters.topic, placeholder='All topics') }}</div>
+    <div class="col-4 col-lg-1"><label class="visually-hidden" for="difficulty">Difficulty</label>
+      <select class="form-select" id="difficulty" name="difficulty"><option value="">Any</option>
+      {% for d in difficulties %}<option value="{{ d }}" {% if filters.difficulty == d %}selected{% endif %}>{{ d|capitalize }}</option>{% endfor %}</select></div>
+    <div class="col-4 col-lg-1"><label class="visually-hidden" for="status">Status</label>
+      <select class="form-select" id="status" name="status"><option value="">Status</option>
+      {% for s in statuses %}<option value="{{ s }}" {% if filters.status == s %}selected{% endif %}>{{ s|replace('_',' ')|capitalize }}</option>{% endfor %}</select></div>
+    <div class="col-4 col-lg-1"><label class="visually-hidden" for="source">Source</label>
+      <select class="form-select" id="source" name="source"><option value="">Source</option>
+      {% for s in sources %}<option value="{{ s }}" {% if filters.source == s %}selected{% endif %}>{{ s|replace('_',' ')|capitalize }}</option>{% endfor %}</select></div>
+  </div>
+  <div class="mt-2 d-flex gap-2">
+    <button class="btn btn-primary btn-sm" type="submit"><i class="bi bi-funnel"></i> Apply filters</button>
+    <a href="/questions" class="btn btn-link btn-sm">Reset</a>
+  </div>
+</form>
+
+<form method="post" action="/questions/bulk" id="bulkForm" data-confirm="Apply this action to the selected questions?">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <input type="hidden" name="back" value="/questions?{{ qs }}">
+  <div class="card">
+    <div class="card-header d-flex flex-wrap gap-2 align-items-center">
+      <div class="form-check mb-0"><input class="form-check-input" type="checkbox" id="checkAll" data-check-all="ids"><label class="form-check-label small" for="checkAll">Select all</label></div>
+      <select class="form-select form-select-sm w-auto ms-auto" name="action" aria-label="Bulk action">
+        <option value="approved">Approve</option><option value="pending_review">Send to review</option>
+        <option value="draft">Mark draft</option><option value="rejected">Reject</option><option value="delete">Delete</option>
+      </select>
+      <button class="btn btn-sm btn-outline-primary" type="submit">Apply to selected</button>
+    </div>
+    <div class="list-group list-group-flush">
+      {% for q in items %}
+      <div class="list-group-item py-3">
+        <div class="d-flex gap-3">
+          <input class="form-check-input mt-1" type="checkbox" name="ids" value="{{ q.id }}" aria-label="Select question {{ q.id }}">
+          <div class="flex-grow-1 min-w-0">
+            <div class="small text-muted mb-1">#{{ q.id }} · {{ q.topic.course.category.name }} › {{ q.topic.course.name }} › {{ q.topic.name }}</div>
+            <a href="/questions/{{ q.id }}" class="fw-semibold text-body text-decoration-none">{{ q.stem|truncate(180) }}</a>
+            <div class="mt-1 d-flex flex-wrap gap-1 align-items-center small">
+              {{ status_badge(q.status) }}
+              <span class="badge text-bg-light border">{{ q.difficulty|capitalize }}</span>
+              <span class="badge text-bg-light border"><i class="bi bi-box-arrow-in-down"></i> {{ q.source_type|replace('_',' ') }}</span>
+              {% if q.competency %}<span class="text-muted">· {{ q.competency|truncate(60) }}</span>{% endif %}
+              <span class="text-muted ms-auto">by {{ q.created_by.full_name if q.created_by else 'system' }} · {{ q.created_at|ago }}</span>
+            </div>
+          </div>
+          <div class="text-nowrap">
+            <a class="btn btn-sm btn-outline-primary" href="/questions/{{ q.id }}/edit" aria-label="Edit question {{ q.id }}"><i class="bi bi-pencil"></i></a>
+          </div>
+        </div>
+      </div>
+      {% else %}
+      {{ empty('No questions found. Try other filters or add a new question.', 'patch-question') }}
+      {% endfor %}
+    </div>
+  </div>
+</form>
+{{ pager(page, pages, '/questions?' ~ qs ~ '&') }}
+{% endblock %}

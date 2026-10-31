@@ -51,3 +51,18 @@
   <button class="btn btn-sm {{ cls }}" type="submit">{% if icon %}<i class="bi bi-{{ icon }}"></i> {% endif %}{{ label }}</button>
 </form>
 {%- endmacro %}
+
+{% macro topic_select(name, groups, selected=0, required=False, placeholder='Choose a topic…', id=None, cls='form-select') -%}
+<select class="{{ cls }}" name="{{ name }}" id="{{ id or name }}" {% if required %}required{% endif %}>
+  <option value="">{{ placeholder }}</option>
+  {% for g in groups %}
+  <optgroup label="{{ g.label }}">
+    {% for tid, tname in g.topics %}<option value="{{ tid }}" {% if selected|int == tid %}selected{% endif %}>{{ tname }}</option>{% endfor %}
+  </optgroup>
+  {% endfor %}
+</select>
+{%- endmacro %}
+
+{% macro kind_icon(kind) -%}
+{{ {'video': 'play-btn', 'article': 'file-earmark-text', 'file': 'file-earmark-arrow-down', 'link': 'link-45deg'}.get(kind, 'link') }}
+{%- endmacro %}
